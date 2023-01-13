@@ -161,7 +161,7 @@ void setup(void)
 
   depart.setTextColor(TFT_RED,TFT_WHITE);
   depart.setTextDatum(4);
-  depart.drawString("        CONNEXION OK         ",160,125,2);
+  depart.drawString("       CONNEXION OK        ",160,126,2);
   depart.pushSprite(10,20);
   // Tamisage écran dim 200 (va de 0 à 255)
   ledcWrite(ledChannel, dim);
@@ -369,7 +369,8 @@ void decrypte(){
   
   // Récupération des données à afficher
   CO = MsgSplit[0];  // Consommation
-  PV = MsgSplit[1];  // Panneaux PV
+  PV = MsgSplit[1];  // Panneaux PV 
+  PV = String(abs(PV.toInt()));  // (avec prod en + ou en -)
   CU = MsgSplit[2];  // Cumulus
 
   // hysteresis des panneaux et cumulus
