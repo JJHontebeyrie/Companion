@@ -52,6 +52,9 @@ char server[] = "192.168.1.**";
 // Les panneaux et le cumulus peuvent avoir une mini conso de veille
 // Mettez ici celle que vous estimez pour votre installation
 int residuel = 10; // en Watt
+// Modifiez les lignes suivantes en fonction de votre équipement
+int puissance = 5000; // production max en watt
+int cumulus = 3000; // puissance cumulus en watt
 //*****************************************************************************
 //*****************************************************************************
 char path[]   = "/status.xml";
@@ -142,10 +145,13 @@ void setup(void)
    // delete old config et vérif de deconnexion
   WiFi.disconnect(true);
   delay(1000);
-  //WiFi.onEvent(WiFiStationDisconnected, WiFiEvent_t::ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
 
   // Etablissement connexion wifi
-  WiFi.mode(WIFI_STA);  
+  WiFi.mode(WIFI_STA);
+  //*****************************************************************************
+  // Si difficultés à se connecter >  wpa minimal (décommenter la ligne suivante)
+  //WiFi.setMinSecurity(WIFI_AUTH_WPA_PSK);
+  //*****************************************************************************
   WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
     Serial.print("."); 
@@ -229,7 +235,6 @@ void Affiche()
   sprite.drawString("CONSOMMATION",115,126,2);
 
   //Panneau de droite sur l'écran : heure, date, voyant, etc...
-  //sprite.drawRoundRect(228,0,92,170,3,TFT_WHITE); 
   sprite.drawRoundRect(234,4,80,31,3,TFT_WHITE);
   sprite.drawRoundRect(234,40,80,20,3,TFT_WHITE);
 
@@ -400,7 +405,7 @@ void decrypte(){
                            Serial.print (j);
                            Serial.println(" >> " + MsgSplit2[j]);}
 
-
+  //**************************************************************
   // Suivant les modifications que vous avez apporté au MSunPV
   // il est possible que les cumuls souhaités ne soient pas
   // ceux affichés. Vérifiez sur le moniteur série le bon index
@@ -408,6 +413,7 @@ void decrypte(){
   CUMINJ = MsgSplit2[1];  // Cumul Injection
   CUMPV = MsgSplit2[2];   // Cumul Panneaux
   CUMBAL = MsgSplit2[3];  // Cumul Ballon cumulus
+  //**************************************************************
 }
 
 // Cette routine découpe la partie du xml voulue en autant de valeurs que trouvées
@@ -439,47 +445,51 @@ void WiFiStationDisconnected(WiFiEvent_t event, WiFiEventInfo_t info){
   depart.setTextDatum(4);
   depart.drawString("   CONNEXION PERTURBEE   ",160,118,2);
   depart.drawString("    VEUILLEZ PATIENTER...    ",160,133,2);
-  depart.pushSprite(0,0);
+  depart.pushSprite(10,20);
   Serial.println(info.wifi_sta_disconnected.reason);
   Serial.println("Trying to Reconnect");
   WiFi.begin(ssid, password);
 }
-
+           
 // Affichage des bargraphs verticaux
 void indic()
 {
-  // PV
+  // Panneaux Photovoltaiques
   int valeur,i;
   valeur = PV.toInt();
-  if (valeur > residuel) { for(i = 0;i<4;i++) sprite.fillRect(200,(44-(i*10)),20,8,color0); }
-  if (valeur > 250) sprite.fillRect(200,44,20,8,color1);
-  if (valeur > 1000) sprite.fillRect(200,34,20,8,color1);
-  if (valeur > 2000) sprite.fillRect(200,24,20,8,color1);
-  if (valeur > 3000) sprite.fillRect(200,14,20,8,color1);
+  int pmax = (puissance/10)*9; // On prend 90% de la prod théorique
+  int pmin = puissance / 20;   // Pour min on prend 1/20 de la prod
+  int ecart = (pmax - pmin) / 8; // steps ecart entre min et max
+  int nbbarres = (valeur/ecart); // combien de steps dans prod en cours
+  if (nbbarres > 8) nbbarres = 8; // on bloque les steps à 8
+  if (valeur > residuel) 
+    { // Permet l'affichage d'au moins une barre si on produit
+      for(i = 0;i<8;i++) sprite.fillRect(200,(44-(i*5)),20,4,color0); 
+      sprite.fillRect(200,44,20,4,color1);                   
+    }
+  // Affichage de barres supplémentaires fonction de la prod
+  for(i = 0;i<nbbarres;i++) sprite.fillRect(200,(44-(i*5)),20,4,color1);
 
   // Cumulus
   valeur = CU.toInt();
-  for(i = 0;i<4;i++) sprite.fillRect(200,(100-(i*10)),20,8,color0);   
-  if (PV.toInt() >0) {   // Chauffe cumulus solaire
-    if (valeur > 100) sprite.fillRect(200,100,20,8,color2);
-    if (valeur > 500) sprite.fillRect(200,90,20,8,color2);
-    if (valeur > 1500) sprite.fillRect(200,80,20,8,color2);
-    if (valeur > 2500) sprite.fillRect(200,70,20,8,color2);
-  } else {  // Chauffe cumulus par timers
-    if (valeur > 100) sprite.fillRect(200,100,20,8,color4);
-    if (valeur > 500) sprite.fillRect(200,90,20,8,color4);
-    if (valeur > 1500) sprite.fillRect(200,80,20,8,color4);
-    if (valeur > 2500) sprite.fillRect(200,70,20,8,color4);    
-  }
-
+  ecart = cumulus/ 8;
+  nbbarres = (valeur/ecart); 
+  if (nbbarres > 8) nbbarres = 8;
+  for(i = 0;i<8;i++) sprite.fillRect(200,(100-(i*5)),20,4,color0);   
+  if (valeur > residuel) sprite.fillRect(200,100,20,4,color4);
+  for(i = 0;i<nbbarres;i++) sprite.fillRect(200,(100-(i*5)),20,4,color4);    
+   
   // Consommation
   valeur = CO.toInt();
-  for(i = 0;i<5;i++) sprite.fillRect(200,(158-(i*10)),20,8,color0);
-  if (valeur < 0) sprite.fillRect(200,158,20,8,TFT_WHITE); else sprite.fillRect(200,158,20,8,color1);
-  if (valeur > 500) sprite.fillRect(200,148,20,8,color2);
-  if (valeur > 1000) sprite.fillRect(200,138,20,8,color3);
-  if (valeur > 2000) sprite.fillRect(200,128,20,8,color4);
-  if (valeur > 3500) sprite.fillRect(200,118,20,8,color5);
+  for(i = 0;i<8;i++) sprite.fillRect(200,(158-(i*5)),20,4,color0);
+  if (valeur < 0) sprite.fillRect(200,153,20,9,TFT_WHITE); else sprite.fillRect(200,158,20,4,color1);
+  if (valeur > 500) sprite.fillRect(200,153,20,4,color1);
+  if (valeur > 1000) sprite.fillRect(200,148,20,4,color2);
+  if (valeur > 1500) sprite.fillRect(200,143,20,4,color2);
+  if (valeur > 2000) sprite.fillRect(200,138,20,4,color3);
+  if (valeur > 2500) sprite.fillRect(200,133,20,4,color3);
+  if (valeur > 3000) sprite.fillRect(200,128,20,4,color4);
+  if (valeur > 4000) sprite.fillRect(200,123,20,4,color5);
 }
 
 // Fait varier le dimmage de 50 à 250 dans un sens et l'inverse
