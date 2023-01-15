@@ -1,2 +1,6 @@
 Modification permettant d'avoir un affichage correct si la production des panneaux est déclarée négative
 (Ajout de la ligne 373)
+
+15/01/2023
+Affichage correct des gauges en tenant compte de la puissance des panneaux installés et de la consommation max d'un cumulus.
+Ces données sont à saisir après les données nécessaires pour se connecter au wifi de votre domicile
