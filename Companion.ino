@@ -1,6 +1,6 @@
 //////////////////////////////////////
 /////          COMPANION         /////
-/////   Version 09/01/23 12:30   /////
+/////   Version 18/01/23 21:00   /////
 /////        @jjhontebeyrie      /////
 //////////////////////////////////////
 /////      Affichage déporté     /////
@@ -30,7 +30,7 @@ TFT_eSprite light = TFT_eSprite(&lcd);    // Sprite ampoule
 TFT_eSprite batterie = TFT_eSprite(&lcd); // Sprite batterie
 
 // Couleurs bargraph
-#define color0 0x10A2   //Sombre
+#define color0 0x10A2   //Sombre 
 #define color1 0x07E0   //Blanc 
 #define color2 0x26FB   //Vert
 #define color3 0xF780   //Bleu
@@ -39,6 +39,7 @@ TFT_eSprite batterie = TFT_eSprite(&lcd); // Sprite batterie
 // Couleurs pour affichage cumuls
 #define color6 0xE6D8
 #define color7 0xEF5D
+#define color8 0x16DA // Température cumulus
 
 //*****************************************************************************
 //************************  Données personnelles  *****************************
@@ -55,6 +56,9 @@ int residuel = 10; // en Watt
 // Modifiez les lignes suivantes en fonction de votre équipement
 int puissance = 5000; // production max en watt
 int cumulus = 3000; // puissance cumulus en watt
+// Affichage de température si vous avez installé une sonde sur le cumulus
+// Mettez alors à true et vérifiez dans la routine decrypte la bonne sonde
+bool sonde = false;
 //*****************************************************************************
 //*****************************************************************************
 char path[]   = "/status.xml";
@@ -70,7 +74,7 @@ char month[6];
 // Adresse IP de connexion du Companion sur écran
 String IP;  
 // Variables affichant les valeurs reçues depuis le MSunPV
-String PV,CU,CO; // Consos et températures. Il y a 16 valeurs, on en récupère que 3
+String PV,CU,CO,TEMPCU; // Consos et températures. Il y a 16 valeurs, on en récupère que 3 ou 4
 String CUMCO,CUMINJ,CUMPV,CUMBAL; // Cumuls. Il y a 8 valeurs, on en récupère que 4
 
 // Wifi
@@ -86,6 +90,8 @@ bool awaitingArrivals = true;
 bool arrivalsRequested = false;
 // Voltage batterie
 uint32_t volt ;
+// Affichage température cumulus éventuel
+int temperature;
 
 // Variables pour dimmer
 const int PIN_LCD_BL = 38;
@@ -246,7 +252,22 @@ void Affiche()
   // Affichage heure et date
   sprite.drawString(String(timeHour)+":"+String(timeMin),272,21,4); 
   sprite.drawString(String(day)+" "+String(month),272,50,2);
-  
+
+  // Affichage éventuel de la température
+  if (sonde == true) {
+    sprite.drawString(TEMPCU,26,85,2);
+    sprite.drawCircle(25,84,20,color1);
+    sprite.drawCircle(25,84,19,color1);
+    if (TEMPCU.toInt() > 30) {
+        sprite.drawCircle(25,84,20,color8);
+        sprite.drawCircle(25,84,19,color8);
+      }
+    if (TEMPCU.toInt() > 50) {
+        sprite.drawCircle(25,84,20,color5);
+        sprite.drawCircle(25,84,19,color5);
+      }
+  } 
+
   // Affichage valeur PV    
   sprite.setFreeFont(&Orbitron_Light_24);
   if (PV.toInt() >= residuel) sprite.drawString(PV +" W",115,35);   
@@ -274,7 +295,7 @@ void Affiche()
   //****************************************************************                     
   if ((CO.toInt() + PV.toInt() > 3000) and (CU.toInt() < 100)){  
     Chauffe.pushImage(0,0,40,40,chauffage);
-    Chauffe.pushToSprite(&sprite,3,122,TFT_BLACK);
+    Chauffe.pushToSprite(&sprite,4,122,TFT_BLACK);
   }
   //**************************************************************** 
   
@@ -377,7 +398,7 @@ void decrypte(){
   PV = MsgSplit[1];  // Panneaux PV 
   PV = String(abs(PV.toInt()));  // (avec prod en + ou en -)
   CU = MsgSplit[2];  // Cumulus
-
+  TEMPCU = MsgSplit[5];  // Sonde température cumulus
   // hysteresis des panneaux et cumulus
   if (PV.toInt() <= residuel) PV = "0"; // Légère consommation due aux onduleurs
   if (CU.toInt() <= residuel) CU = "0"; // Légère consommation due au thermostat du cumulus
