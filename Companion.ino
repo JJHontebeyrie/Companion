@@ -20,6 +20,7 @@
 #include "logo.h"
 #include "divers.h"
 #include "sunset.h"
+#include "perso.h"
 
 TFT_eSPI lcd = TFT_eSPI();
 TFT_eSprite sprite = TFT_eSprite(&lcd);   // Tout l'écran
@@ -32,6 +33,7 @@ TFT_eSprite fond = TFT_eSprite(&lcd);     // Sprite contour affichage cumuls
 TFT_eSprite light = TFT_eSprite(&lcd);    // Sprite ampoule
 TFT_eSprite batterie = TFT_eSprite(&lcd); // Sprite batterie
 
+// Couleurs bargraph
 #define color0 0x10A2   //Sombre 
 #define color1 0x07E0   //Blanc 
 #define color2 0x26FB   //Vert
@@ -43,31 +45,9 @@ TFT_eSprite batterie = TFT_eSprite(&lcd); // Sprite batterie
 #define color7 0xEF5D
 #define color8 0x16DA // Température cumulus
 
-//*****************************************************************************
-//************************  Données personnelles  *****************************
-// Vos codes accès au wifi et adresse de votre MSunPV dans votre réseau
-// Remplacez les * par vos valeurs
-const char* ssid     = "******";
-const char* password = "******";
-// Adresse IP du serveur local (ici MSunPV). Il se peut suivant votre réseau
-// que vous ayiez besion de remplacer toute la chaine, respectez . entre les chiffres
-char server[] = "192.168.1.**";    
-// Les panneaux et le cumulus peuvent avoir une mini conso de veille
-// Mettez ici celle que vous estimez pour votre installation
-int residuel = 10; // en Watt
-// Modifiez les lignes suivantes en fonction de votre équipement
-int puissance = 5000; // production max en watt
-int cumulus = 3000; // puissance cumulus en watt
-// Affichage de température si vous avez installé une sonde sur le cumulus
-// Mettez alors à true et vérifiez dans la routine 'decrypte' la bonne sonde
-bool sonde = false;
-// Localisation de votre ville et décalage horaire pour lever/coucher soleil
-double latitude = 44.8378;
-double longitude = -0.594;
-int utc_offset = +1;
-//*****************************************************************************
-//*****************************************************************************
+// Chemin acces au fichier de données MSunPV
 char path[]   = "/status.xml";
+
 // Serveur pour heure
 const char* ntpServer = "pool.ntp.org";
 const long  gmtOffset_sec =3600;   //time zone * 3600 , Europe time zone est  +1 GTM
@@ -79,12 +59,15 @@ char day[3];
 char month[6];
 char year[5];
 String Months[13]={"Mois","Jan","Fev","Mars","Avril","Mai","Juin","Juill","Aout","Sept","Oct","Nov","Dec"};
+
 // Lever et coucher du soleil
 double transit, sunrise, sunset;
 char str[6];
 int actualYear, actualMonth, dayInMonth;
+
 // Adresse IP de connexion du Companion sur écran
-String IP;  
+//String IP;  
+
 // Variables affichant les valeurs reçues depuis le MSunPV
 String PV,CU,CO,TEMPCU; // Consos et températures. Il y a 16 valeurs, on en récupère que 3 ou 4
 String CUMCO,CUMINJ,CUMPV,CUMBAL; // Cumuls. Il y a 8 valeurs, on en récupère que 4
@@ -92,16 +75,20 @@ String CUMCO,CUMINJ,CUMPV,CUMBAL; // Cumuls. Il y a 8 valeurs, on en récupère 
 // Wifi
 int status = WL_IDLE_STATUS;
 WiFiClient client;
+
 // Chaines pour decryptage
 String matchString = "";
 String  MsgContent;
 String MsgSplit[16]; // 16 valeurs à récupérer pour les consos et températures
 String MsgSplit2[8]; // 8 valeurs à récupérer pour les compteurs cumul
+
 // Pointeurs pour relance recherche valeurs
 bool awaitingArrivals = true;
 bool arrivalsRequested = false;
+
 // Voltage batterie
 uint32_t volt ;
+
 // Affichage température cumulus éventuel
 int temperature;
 
@@ -119,17 +106,13 @@ void setup()
   // Allume écran (optionnel)
   //pinMode(15,OUTPUT);
   //digitalWrite(15,1);
+
   //Initialisation des 2 boutons
   pinMode(0, INPUT_PULLUP);
   pinMode(14, INPUT_PULLUP);
   // Initialisation ecran   
   lcd.init();
-  // **********************************************************************************
-  // **********************************************************************************
-  // Boitier horizontal prise à gauche, pour prise à droite mettez lcd.setRotation(1); 
-  lcd.setRotation(3); 
-  // **********************************************************************************
-  // **********************************************************************************
+  lcd.setRotation(rotation); 
   lcd.setSwapBytes(true);
   // Affichage logo depart
   lcd.fillScreen(TFT_WHITE);
@@ -178,7 +161,7 @@ void setup()
     delay(1000);   
     }
   Serial.println("WiFi connected.");
-  IP=WiFi.localIP().toString();
+  //IP=WiFi.localIP().toString();
   configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
 
   // Paramètres pour dimmer
@@ -271,7 +254,7 @@ void Affiche()
   sprite.drawString(String(timeHour)+":"+String(timeMin),272,21,4); 
   sprite.drawString(String(day)+" "+ (Months[actualMonth]),272,50,2);
   // Affichage éventuel de la température si sonde validée
-  if (sonde == true) {
+  if (sonde) {
     sprite.drawString(TEMPCU,26,85,2);
     sprite.drawCircle(25,84,20,color1);
     sprite.drawCircle(25,84,19,color1);
@@ -303,26 +286,26 @@ void Affiche()
   if ((PV.toInt() > CO.toInt()) and (PV.toInt() > 1200)) voyant.pushImage(0,0,68,68,BtnV);  
   if (CO.toInt() < 0) voyant.pushImage(0,0,68,68,BtnV);
   if (PV.toInt() < residuel) { 
-                      sun.pushImage(0,0,220,29,Soleil); // Hors service & soleil
-                      sun.pushToSprite(&sprite,3,20,TFT_BLACK);
-                      //HS.pushImage(0,0,173,22,hs);  // Hors service
-                      //HS.pushToSprite(&sprite,30,25,TFT_BLACK);
-                      voyant.pushImage(0,0,68,68,BtnR);  // Voyant
-                      // Calcul lever, durée et coucher du soleil en heures (UTC)
-                      calcSunriseSunset(actualYear, actualMonth, dayInMonth, latitude, longitude, transit, sunrise, sunset);
-                      sprite.setTextColor(TFT_YELLOW,TFT_BLACK);
-                      sprite.drawString((hoursToString(sunrise + utc_offset, str)),23,15,2); 
-                      sprite.drawString((hoursToString(sunset + utc_offset, str)),203,15,2); 
-                      sprite.setTextColor(TFT_WHITE,TFT_BLACK);
-                      }
-  //****************************************************************                    
-  // En cas de chauffage électrique, sinon effacez les lignes du if
-  //****************************************************************                     
-  if ((CO.toInt() + PV.toInt() > 3000) and (CU.toInt() < 100)){  
-    Chauffe.pushImage(0,0,40,40,chauffage);
-    Chauffe.pushToSprite(&sprite,6,122,TFT_BLACK);
+    sun.pushImage(0,0,220,29,Soleil); // Hors service & soleil
+    sun.pushToSprite(&sprite,3,20,TFT_BLACK);
+    //HS.pushImage(0,0,173,22,hs);  // Hors service
+    //HS.pushToSprite(&sprite,30,25,TFT_BLACK);
+    voyant.pushImage(0,0,68,68,BtnR);  // Voyant
+    // Calcul lever, durée et coucher du soleil en heures (UTC)
+    calcSunriseSunset(actualYear, actualMonth, dayInMonth, latitude, longitude, transit, sunrise, sunset);
+    sprite.setTextColor(TFT_YELLOW,TFT_BLACK);
+    sprite.drawString((hoursToString(sunrise + utc_offset, str)),23,15,2); 
+    sprite.drawString((hoursToString(sunset + utc_offset, str)),203,15,2); 
+    sprite.setTextColor(TFT_WHITE,TFT_BLACK);
   }
-  //**************************************************************** 
+                  
+  // En cas de chauffage électrique
+  if (chauffageE) {               
+    if ((CO.toInt() + PV.toInt() > 3000) and (CU.toInt() < 100)){  
+      Chauffe.pushImage(0,0,40,40,chauffage);
+      Chauffe.pushToSprite(&sprite,6,122,TFT_BLACK);
+    }
+  }
   
   // Appel routine affichage des graphes latéraux
   indic(); 
