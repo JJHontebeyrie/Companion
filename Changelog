@@ -3,6 +3,7 @@ Affichage des horaires de lever et coucher de soleil lorsque les panneaux sont h
 Affichage correct de la date en français
 Correction de quelques bugs
 Attention, il est nécessaire d'installer la bibliothèque SolarCalculator par jpb10 que vous recherchez dans les bibliothèques Arduino.
+Les variables personnelles sont désormais dans le fichier perso.h
 
 18/01/2023
 La température de chauffe du cumulus est visible, un anneau lumineux varie en fonction de sa température.
