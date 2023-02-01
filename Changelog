@@ -1,3 +1,9 @@
+01/02/2023
+Affichage des horaires de lever et coucher de soleil lorsque les panneaux sont hors service
+Affichage correct de la date en français
+Correction de quelques bugs
+Attention, il est nécessaire d'installer la bibliothèque SolarCalculator par jpb10 que vous recherchez dans les bibliothèques Arduino.
+
 18/01/2023
 La température de chauffe du cumulus est visible, un anneau lumineux varie en fonction de sa température.
 Il est nécessaire de déclarer la sonde en début du programme pour que l'affichage se fasse.
