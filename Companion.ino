@@ -1,6 +1,6 @@
 //////////////////////////////////////
 /////          COMPANION         /////
-/////   Version 18/01/23 21:00   /////
+/////   Version 01/02/23 13:00   /////
 /////        @jjhontebeyrie      /////
 //////////////////////////////////////
 /////      Affichage déporté     /////
@@ -14,22 +14,24 @@
 
 #include <TFT_eSPI.h>
 #include <WiFi.h>
-#include "time.h"
+#include <SolarCalculator.h>
+#include <time.h>
 #include "Boutons.h"
 #include "logo.h"
 #include "divers.h"
+#include "sunset.h"
 
 TFT_eSPI lcd = TFT_eSPI();
 TFT_eSprite sprite = TFT_eSprite(&lcd);   // Tout l'écran
 TFT_eSprite voyant = TFT_eSprite(&lcd);   // Sprite voyant
 TFT_eSprite depart = TFT_eSprite(&lcd);   // Sprite écran d'accueil
-TFT_eSprite HS = TFT_eSprite(&lcd);       // Sprite hors service
+//TFT_eSprite HS = TFT_eSprite(&lcd);     // Sprite hors service
+TFT_eSprite sun = TFT_eSprite(&lcd);      // Sprite Hors service & soleil
 TFT_eSprite Chauffe = TFT_eSprite(&lcd);  // Sprite idicateur chauffage électrique
 TFT_eSprite fond = TFT_eSprite(&lcd);     // Sprite contour affichage cumuls
 TFT_eSprite light = TFT_eSprite(&lcd);    // Sprite ampoule
 TFT_eSprite batterie = TFT_eSprite(&lcd); // Sprite batterie
 
-// Couleurs bargraph
 #define color0 0x10A2   //Sombre 
 #define color1 0x07E0   //Blanc 
 #define color2 0x26FB   //Vert
@@ -57,8 +59,12 @@ int residuel = 10; // en Watt
 int puissance = 5000; // production max en watt
 int cumulus = 3000; // puissance cumulus en watt
 // Affichage de température si vous avez installé une sonde sur le cumulus
-// Mettez alors à true et vérifiez dans la routine decrypte la bonne sonde
+// Mettez alors à true et vérifiez dans la routine 'decrypte' la bonne sonde
 bool sonde = false;
+// Localisation de votre ville et décalage horaire pour lever/coucher soleil
+double latitude = 44.8378;
+double longitude = -0.594;
+int utc_offset = +1;
 //*****************************************************************************
 //*****************************************************************************
 char path[]   = "/status.xml";
@@ -71,6 +77,12 @@ char timeHour[3];
 char timeMin[3];
 char day[3];
 char month[6];
+char year[5];
+String Months[13]={"Mois","Jan","Fev","Mars","Avril","Mai","Juin","Juill","Aout","Sept","Oct","Nov","Dec"};
+// Lever et coucher du soleil
+double transit, sunrise, sunset;
+char str[6];
+int actualYear, actualMonth, dayInMonth;
 // Adresse IP de connexion du Companion sur écran
 String IP;  
 // Variables affichant les valeurs reçues depuis le MSunPV
@@ -98,15 +110,15 @@ const int PIN_LCD_BL = 38;
 const int freq = 1000;
 const int ledChannel = 0;
 const int resolution = 8;
-int dim = 250;
+int dim = 150; // Eclairage intermédiaire au lancement
 bool inverse = false;
 int x;
 
-void setup(void)
+void setup()
 { 
   // Allume écran (optionnel)
-  pinMode(15,OUTPUT);
-  digitalWrite(15,1);
+  //pinMode(15,OUTPUT);
+  //digitalWrite(15,1);
   //Initialisation des 2 boutons
   pinMode(0, INPUT_PULLUP);
   pinMode(14, INPUT_PULLUP);
@@ -132,8 +144,10 @@ void setup(void)
   sprite.setTextDatum(4);                     // Alignement texte au centre du rectangle le contenant
   voyant.createSprite(68,68);                 // Voyant rouge, vert ou bleu indiquant si on peut lancer un truc
   voyant.setSwapBytes(true);                  // Pour affichage correct d'une image
-  HS.createSprite(173,22);                    // Texte Hors service
-  HS.setSwapBytes(true);
+  //HS.createSprite(173,22);                  // Texte Hors service
+  //HS.setSwapBytes(true);
+  sun.createSprite(220,29);                   // Texte Hors service et soleil
+  sun.setSwapBytes(true);
   Chauffe.createSprite(40,40);                // Chauffage en cours 
   Chauffe.setSwapBytes(true);
   fond.createSprite(158,77);                  // Image de fond des cumuls
@@ -223,9 +237,13 @@ void printLocalTime()
   strftime(timeHour,3, "%H", &timeinfo);
   strftime(timeMin,3, "%M", &timeinfo);
   strftime(day,3, "%d", &timeinfo);
-  strftime(month,6, "%b", &timeinfo); 
+  strftime(month,3, "%m", &timeinfo);
+  strftime(year,5, "%Y", &timeinfo);
+  actualYear=String(year).toInt();
+  dayInMonth=String(day).toInt();
+  actualMonth=String(month).toInt();
   }
-  
+
 void Affiche()
 {
   //  Dessin fenêtre principale
@@ -251,9 +269,8 @@ void Affiche()
 
   // Affichage heure et date
   sprite.drawString(String(timeHour)+":"+String(timeMin),272,21,4); 
-  sprite.drawString(String(day)+" "+String(month),272,50,2);
-
-  // Affichage éventuel de la température
+  sprite.drawString(String(day)+" "+ (Months[actualMonth]),272,50,2);
+  // Affichage éventuel de la température si sonde validée
   if (sonde == true) {
     sprite.drawString(TEMPCU,26,85,2);
     sprite.drawCircle(25,84,20,color1);
@@ -263,12 +280,16 @@ void Affiche()
         sprite.drawCircle(25,84,19,color8);
       }
     if (TEMPCU.toInt() > 50) {
+        sprite.drawCircle(25,84,20,color4);
+        sprite.drawCircle(25,84,19,color4);
+      }
+    if (TEMPCU.toInt() > 60) {
         sprite.drawCircle(25,84,20,color5);
         sprite.drawCircle(25,84,19,color5);
       }
   } 
 
-  // Affichage valeur PV    
+  // Affichage valeur PV  
   sprite.setFreeFont(&Orbitron_Light_24);
   if (PV.toInt() >= residuel) sprite.drawString(PV +" W",115,35);   
   // Affichage valeur Cumulus
@@ -276,26 +297,30 @@ void Affiche()
   // Affichage valeur Consommation
   sprite.drawString(CO +" W",115,150);
 
-  // Affichage IP wifi et batterie
-  //sprite.drawString(String(volt)+" mV",275,150,2);
-  //sprite.setTextColor(TFT_DARKGREEN);  
-  //sprite.setTextFont(0);
-  //sprite.drawString(IP,275,160); 
-
   //Voyant de consommation
   if (CO.toInt() > PV.toInt()) voyant.pushImage(0,0,68,68,BtnR);
-  if (PV.toInt() > CO.toInt()) voyant.pushImage(0,0,68,68,BtnB);  
+  if (PV.toInt() > CO.toInt()) voyant.pushImage(0,0,68,68,BtnB); 
+  if ((PV.toInt() > CO.toInt()) and (PV.toInt() > 1200)) voyant.pushImage(0,0,68,68,BtnV);  
   if (CO.toInt() < 0) voyant.pushImage(0,0,68,68,BtnV);
-  if (PV.toInt() < residuel) { HS.pushImage(0,0,173,22,hs);
-                      HS.pushToSprite(&sprite,30,25,TFT_BLACK);
-                      voyant.pushImage(0,0,68,68,BtnR);
+  if (PV.toInt() < residuel) { 
+                      sun.pushImage(0,0,220,29,Soleil); // Hors service & soleil
+                      sun.pushToSprite(&sprite,3,20,TFT_BLACK);
+                      //HS.pushImage(0,0,173,22,hs);  // Hors service
+                      //HS.pushToSprite(&sprite,30,25,TFT_BLACK);
+                      voyant.pushImage(0,0,68,68,BtnR);  // Voyant
+                      // Calcul lever, durée et coucher du soleil en heures (UTC)
+                      calcSunriseSunset(actualYear, actualMonth, dayInMonth, latitude, longitude, transit, sunrise, sunset);
+                      sprite.setTextColor(TFT_YELLOW,TFT_BLACK);
+                      sprite.drawString((hoursToString(sunrise + utc_offset, str)),23,15,2); 
+                      sprite.drawString((hoursToString(sunset + utc_offset, str)),203,15,2); 
+                      sprite.setTextColor(TFT_WHITE,TFT_BLACK);
                       }
   //****************************************************************                    
   // En cas de chauffage électrique, sinon effacez les lignes du if
   //****************************************************************                     
   if ((CO.toInt() + PV.toInt() > 3000) and (CU.toInt() < 100)){  
     Chauffe.pushImage(0,0,40,40,chauffage);
-    Chauffe.pushToSprite(&sprite,4,122,TFT_BLACK);
+    Chauffe.pushToSprite(&sprite,6,122,TFT_BLACK);
   }
   //**************************************************************** 
   
@@ -491,7 +516,7 @@ void indic()
   // Affichage de barres supplémentaires fonction de la prod
   for(i = 0;i<nbbarres;i++) sprite.fillRect(200,(44-(i*5)),20,4,color1);
 
-  // Cumulus
+ // Cumulus
   valeur = CU.toInt();
   ecart = cumulus/ 8;
   nbbarres = (valeur/ecart); 
@@ -554,4 +579,20 @@ if (volt < 2.5) sprite.fillRect(296,157,12,3,color0);
 // Contours
 sprite.drawRoundRect(289,138,26,29,3,TFT_WHITE);
 sprite.drawRoundRect(234,138,56,29,3,TFT_WHITE);
+}
+
+// Rounded HH:mm format
+char * hoursToString(double h, char *str)
+{
+  int m = int(round(h * 60));
+  int hr = (m / 60) % 24;
+  int mn = m % 60;
+
+  str[0] = (hr / 10) % 10 + '0';
+  str[1] = (hr % 10) + '0';
+  str[2] = ':';
+  str[3] = (mn / 10) % 10 + '0';
+  str[4] = (mn % 10) + '0';
+  str[5] = '\0';
+  return str;
 }
