@@ -1,3 +1,10 @@
+08/02/2023
+Calcul du lever et coucher de soleil optimisés.
+Indication de la météo, de la température extérieure, du point de givre.
+Changement de police pour l'affichage de la page cumuls.
+Correction de divers bugs.
+Amélioration des commentaires dans le programme principal.
+
 01/02/2023
 Affichage des horaires de lever et coucher de soleil lorsque les panneaux sont hors service
 Affichage correct de la date en français
