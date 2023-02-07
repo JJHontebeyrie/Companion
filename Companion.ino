@@ -28,7 +28,7 @@ https://github.com/Bodmer/OpenWeather
 #include <JSON_Decoder.h> // https://github.com/Bodmer/JSON_Decoder
 #include <OpenWeather.h>  // Latest here: https://github.com/Bodmer/OpenWeather
 #include "NTP_Time.h"     // Attached to this sketch, see that tab for library needs
-#include "perso2.h"
+#include "perso.h"
 #include "logo.h"
 #include "images.h"
 #include "meteo.h"
