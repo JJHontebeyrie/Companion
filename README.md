@@ -4,12 +4,8 @@
 Cet afficheur est conçu pour être utilisé avec le LILYGO T-Display S3 et certaines bibliothèques sont nécessaires pour un fonctionnement correct sous Arduino IDE. Tous les détails sont dans cette vidéo https://youtu.be/8KDCmyMWrUk
 
 **TFT_eSPI.h par Bodmer**
-
 Cette bibliothèque doit être installée dans Documents/Arduino/libraries. Dans le github https://github.com/Xinyuan-LilyGO/T-Display-S3, ce fichier est contenu dans le répertoire lib. Il suffit de la copier pour la coller dans libraries.
 
-**WiFiManager par tzapu**
-
-A rechercher grace à l'onglet bibliothèque sous Arduino IDE.
 
 **Fonctions de l'afficheur**
 
