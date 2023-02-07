@@ -10,15 +10,23 @@ Cette bibliothèque doit être installée dans Documents/Arduino/libraries. Dans
 **Bibliothèques à installer pour la version 2
 
 https://github.com/PaulStoffregen/Time
+
 https://github.com/JChristensen/Timezone
+
 https://github.com/Bodmer/JSON_Decoder
+
 https://github.com/Bodmer/OpenWeather
+
+Par ailleurs une clef API gratuite openweathermap.org est nécessaire (voir sur leur site)
 
 
 **Fonctions de l'afficheur**
 
 Cette version permer l'affichage de la production des panneaux photovoltaiques, de la recharge d'un cumulus et de la consommation totale.
 Le rafraichissement des informations se fait toutes les 15 secondes.
+Une icone vidéo vous montre le temps actuel, la température extérieure, le point de givre ainsi que les horaires du lever et coucher de soleil.
+
+
 
 Le bouton du T-Diplay situé en bas, si vous avez branché le module par la gauche affiche les cumuls de la consommation, de la production des panneaux, de la réinjection, et de la charge du cumulus.
 
