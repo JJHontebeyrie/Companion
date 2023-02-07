@@ -25,7 +25,7 @@ Par ailleurs une clef API gratuite openweathermap.org est nécessaire (voir sur 
 Cette version permer l'affichage de la production des panneaux photovoltaiques, de la recharge d'un cumulus et de la consommation totale.
 Le rafraichissement des informations se fait toutes les 15 secondes.
 
-Une icone vidéo vous montre le temps actuel, la température extérieure, le point de givre ainsi que les horaires du lever et coucher de soleil. Le rafraissement des ces infos, se fait toutes les 15 minutes.
+Une icone vidéo vous montre le temps actuel, la température extérieure, le point de givre ainsi que les horaires du lever et coucher de soleil. Le rafraichissement des ces infos, se fait toutes les 15 minutes.
 
 Le bouton du T-Diplay situé en bas, si vous avez branché le module par la gauche affiche les cumuls de la consommation, de la production des panneaux, de la réinjection, et de la charge du cumulus.
 
