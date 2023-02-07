@@ -7,7 +7,7 @@ Cet afficheur est conçu pour être utilisé avec le LILYGO T-Display S3 et cert
 
 Cette bibliothèque doit être installée dans Documents/Arduino/libraries. Dans le github https://github.com/Xinyuan-LilyGO/T-Display-S3, ce fichier est contenu dans le répertoire lib. Il suffit de la copier pour la coller dans libraries.
 
-**Bibliothèques à installer pour la version 2
+**Bibliothèques à installer pour la version 2**
 
 https://github.com/PaulStoffregen/Time
 
@@ -24,9 +24,8 @@ Par ailleurs une clef API gratuite openweathermap.org est nécessaire (voir sur 
 
 Cette version permer l'affichage de la production des panneaux photovoltaiques, de la recharge d'un cumulus et de la consommation totale.
 Le rafraichissement des informations se fait toutes les 15 secondes.
-Une icone vidéo vous montre le temps actuel, la température extérieure, le point de givre ainsi que les horaires du lever et coucher de soleil.
 
-
+Une icone vidéo vous montre le temps actuel, la température extérieure, le point de givre ainsi que les horaires du lever et coucher de soleil. Le rafraissement des ces infos, se fait toutes les 15 minutes.
 
 Le bouton du T-Diplay situé en bas, si vous avez branché le module par la gauche affiche les cumuls de la consommation, de la production des panneaux, de la réinjection, et de la charge du cumulus.
 
