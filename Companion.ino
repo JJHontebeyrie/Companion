@@ -282,12 +282,11 @@ void Affiche(){
   sprite.drawCircle(310,154,2,TFT_WHITE); // pour °
   sprite.setTextDatum(4); // retour au centre milieu
   sprite.setTextColor(TFT_CYAN,TFT_BLACK);
-  if (tempExt.toInt() <= 3) sprite.drawString("*", 289, 168,4);  
+  if (tempExt.toInt() <= 3) sprite.drawString("*", 285, 168,4);  
   sprite.setTextColor(TFT_WHITE,TFT_BLACK);
   meteo.pushToSprite(&sprite,235,120,TFT_BLACK);
 
   // Affichage heure et date
-  //sprite.drawString(String(timeHour)+":"+String(timeMin),272,17,4); 
     sprite.drawString(String(timeNow),272,17,4);
     sprite.drawString(String(date),272,43,2);
   
