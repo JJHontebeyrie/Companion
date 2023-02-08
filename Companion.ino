@@ -21,6 +21,10 @@ https://github.com/JChristensen/Timezone
 https://github.com/Bodmer/JSON_Decoder
 https://github.com/Bodmer/OpenWeather
 
+Ces bibliothèques doivent être décompactées
+et les dossiers obtenus sont ensuite collés
+dans /Documents/Arduino/librairies
+
 *******************************************/
 
 #include <TFT_eSPI.h>
@@ -269,10 +273,10 @@ void Affiche(){
   if ((icone == "09d") or (icone == "09n")) {meteo.pushImage(0,0,50,50,rain); goto suite;}
   if ((icone == "10d") or (icone == "10n")) {meteo.pushImage(0,0,50,50,lightRain); goto suite;}
   if ((icone == "11d") or (icone == "11n")) {meteo.pushImage(0,0,50,50,thunderstorm); goto suite;}
-  if (icone == "13d") {meteo.pushImage(0,0,50,50,sleet); goto suite;}
-  if (ID == "621") {meteo.pushImage(0,0,50,50,snow); goto suite;}
-  if (ID == "741") {meteo.pushImage(0,0,50,50,fog); goto suite;}
-  if (icone == "50d") {meteo.pushImage(0,0,50,50,wind); goto suite;}
+  if ((icone == "13d") or (icone == "13n")) {meteo.pushImage(0,0,50,50,snow); goto suite;}
+  if ((icone == "50d") or (icone == "50n")) {meteo.pushImage(0,0,50,50,fog); goto suite;}
+  if (ID == "301") {meteo.pushImage(0,0,50,50,drizzle); goto suite;} 
+  if (ID == "221") {meteo.pushImage(0,0,50,50,wind); goto suite;}
   if (icone == "80d") meteo.pushImage(0,0,50,50,splash);
 
   suite:
@@ -736,7 +740,7 @@ String strDate(time_t unixTime)
 
 /***************************************************************************************
 **     Routine de test pour afficher toutes les icones sur l'écran
-**               Décommenter la ligne 239 pour l'activer
+**               Décommenter la ligne 243 pour l'activer
 ***************************************************************************************/
 void test(){
   PV = "0";
