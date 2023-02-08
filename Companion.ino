@@ -97,7 +97,7 @@ String MsgSplit2[8]; // 8 valeurs à récupérer pour les compteurs cumul
 
 // Données de openweather
 #define TIMEZONE euCET // Voir NTP_Time.h tab pour d'autres "Zone references", UK, usMT etc
-String lever, coucher, date, tempExt, icone;
+String lever, coucher, date, tempExt, icone, ID;
 OW_Weather ow; // Weather forecast librairie instance
 // Update toutes les 15 minutes, jusqu'à 1000 requêtes par jour gratuit (soit ~40 par heure)
 const int UPDATE_INTERVAL_SECS = 15 * 60UL; // 15 minutes
@@ -264,17 +264,14 @@ void Affiche(){
   if (icone == "01n") {meteo.pushImage(0,0,50,50,clear_night); goto suite;}
   if (icone == "02d") {meteo.pushImage(0,0,50,50,partly_cloudy_day); goto suite;}
   if (icone == "02n") {meteo.pushImage(0,0,50,50,partly_cloudy_night); goto suite;}
-  if ((icone == "03d") or (icone == "03n")) {meteo.pushImage(0,0,50,50,cloudy); goto suite;}
-  if (icone == "09d") {meteo.pushImage(0,0,50,50,drizzle); goto suite;}
-  if ((icone == "50d") or (icone == "50n")) {meteo.pushImage(0,0,50,50,fog); goto suite;}
-  if ((icone == "13d") or (icone == "13n")) {meteo.pushImage(0,0,50,50,hail); goto suite;}
-  if ((icone == "09d") or (icone == "09d")) {meteo.pushImage(0,0,50,50,lightRain); goto suite;}
-  if (icone == "04d") {meteo.pushImage(0,0,50,50,partly_cloudy_day); goto suite;}
-  if (icone == "04n") {meteo.pushImage(0,0,50,50,partly_cloudy_night); goto suite;}
-  if ((icone == "10d") or (icone == "10n")) {meteo.pushImage(0,0,50,50,rain); goto suite;}
-  if (icone == "13d") {meteo.pushImage(0,0,50,50,sleet); goto suite;}
-  if ((icone == "13d") or (icone == "13n")) {meteo.pushImage(0,0,50,50,snow); goto suite;}
+  if ((icone == "03d") or (icone == "03n")) {meteo.pushImage(0,0,50,50,few_clouds); goto suite;}
+  if ((icone == "04d") or (icone == "04n")) {meteo.pushImage(0,0,50,50,cloudy); goto suite;}
+  if ((icone == "09d") or (icone == "09n")) {meteo.pushImage(0,0,50,50,rain); goto suite;}
+  if ((icone == "10d") or (icone == "10n")) {meteo.pushImage(0,0,50,50,lightRain); goto suite;}
   if ((icone == "11d") or (icone == "11n")) {meteo.pushImage(0,0,50,50,thunderstorm); goto suite;}
+  if (icone == "13d") {meteo.pushImage(0,0,50,50,sleet); goto suite;}
+  if (ID == "621") {meteo.pushImage(0,0,50,50,snow); goto suite;}
+  if (ID == "741") {meteo.pushImage(0,0,50,50,fog); goto suite;}
   if (icone == "50d") {meteo.pushImage(0,0,50,50,wind); goto suite;}
   if (icone == "80d") meteo.pushImage(0,0,50,50,splash);
 
@@ -579,12 +576,14 @@ void donneesmeteo(){
   Serial.print("temperature         : "); Serial.println(current->temp);
   Serial.print("description         : "); Serial.println(current->description);
   Serial.print("icone               : "); Serial.println(current->icon);
+  Serial.print("ID                  : "); Serial.println(current->id);
   lever = strLocalTime(current->sunrise);
   coucher = strLocalTime(current->sunset);
   date = strDate(current->dt);
   tempExt = String(current->temp, 0);  // Température sans décimale
   if (tempExt.length() < 2) tempExt = " " + tempExt; //et sur 2 caractères
   icone = (current->icon);
+  ID  = (current->id);
   if (wink) icone ="80d";
   
   // Effacement des chaines pour libérer la mémoire
