@@ -262,6 +262,8 @@ void Affiche(){
   meteo.pushImage(0,0,50,50,unknown);
   if (icone == "01d") {meteo.pushImage(0,0,50,50,clear_day); goto suite;}
   if (icone == "01n") {meteo.pushImage(0,0,50,50,clear_night); goto suite;}
+  if (icone == "02d") {meteo.pushImage(0,0,50,50,partly_cloudy_day); goto suite;}
+  if (icone == "02n") {meteo.pushImage(0,0,50,50,partly_cloudy_night); goto suite;}
   if ((icone == "03d") or (icone == "03n")) {meteo.pushImage(0,0,50,50,cloudy); goto suite;}
   if (icone == "09d") {meteo.pushImage(0,0,50,50,drizzle); goto suite;}
   if ((icone == "50d") or (icone == "50n")) {meteo.pushImage(0,0,50,50,fog); goto suite;}
