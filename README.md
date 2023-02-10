@@ -33,4 +33,4 @@ En cas de problème, le bouton reset situé sur le haut du boitier permet de rel
 
 C'est un routeur solaire permettant d'utiliser le courant normalement réinjecté dans le réseau et de l'utiliser pour recharger un cumulus, lancer une climatisation, faire fonctionner un radiateur, un moteur ou une pompe par exemple. Tous les détails sont sur le site https://ard-tek.com
 
-![Screenshot](img/IMG_0775.jpg)
+![Screenshot](img/SAM_0251_640.JPG)
