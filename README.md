@@ -1,6 +1,6 @@
 # Companion
 **Afficheur déporté pour MSunPV**
-![Cover](https://github.com/JJHontebeyrie/JJHontebeyrie/blob/master/img/IMG_6869.JPEG)
+(https://github.com/JJHontebeyrie/JJHontebeyrie/blob/master/img/IMG_6869.JPEG)
 
 Cet afficheur est conçu pour être utilisé avec le LILYGO T-Display S3 et certaines bibliothèques sont nécessaires pour un fonctionnement correct sous Arduino IDE. Tous les détails sont dans cette vidéo https://youtu.be/8KDCmyMWrUk
 
