@@ -1,7 +1,7 @@
 # Companion
 **Afficheur déporté pour MSunPV**
 
-![Screenshot](img/IMG_6869.JPEG)
+![Screenshot](img/IMG_6869.jpg) ![Screenshot](img/IMG_6871.jpg)
 
 Cet afficheur est conçu pour être utilisé avec le LILYGO T-Display S3 et certaines bibliothèques sont nécessaires pour un fonctionnement correct sous Arduino IDE. Tous les détails sont dans cette vidéo https://youtu.be/8KDCmyMWrUk ainsi que dans le document pdf de ce repository.
 
@@ -25,4 +25,3 @@ En cas de problème, le bouton reset situé sur le haut du boitier permet de rel
 
 C'est un routeur solaire permettant d'utiliser le courant normalement réinjecté dans le réseau et de l'utiliser pour recharger un cumulus, lancer une climatisation, faire fonctionner un radiateur, un moteur ou une pompe par exemple. Tous les détails sont sur le site https://ard-tek.com
 
-![Screenshot](img/IMG_6871.jpg)
