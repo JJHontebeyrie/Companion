@@ -1,6 +1,6 @@
 /*******************************************
 **               COMPANION                **
-**              Version 2.0               **
+**             Version 2.12               **
 **             @jjhontebeyrie             **
 ********************************************
 **            Affichage déporté           **
@@ -23,7 +23,7 @@ https://github.com/Bodmer/OpenWeather
 
 Ces bibliothèques doivent être décompactées
 et les dossiers obtenus sont ensuite collés
-dans /Documents/Arduino/librairies
+dans /Documents/Arduino/libraries
 
 *******************************************/
 
@@ -275,12 +275,11 @@ void Affiche(){
   if ((icone == "11d") or (icone == "11n")) {meteo.pushImage(0,0,50,50,thunderstorm); goto suite;}
   if ((icone == "13d") or (icone == "13n")) {meteo.pushImage(0,0,50,50,snow); goto suite;}
   if ((icone == "50d") or (icone == "50n")) {meteo.pushImage(0,0,50,50,fog); goto suite;}
+  if (icone == "80d") {meteo.pushImage(0,0,50,50,splash);  goto suite;}
   if (ID == "301") {meteo.pushImage(0,0,50,50,drizzle); goto suite;} 
-  if (ID == "221") {meteo.pushImage(0,0,50,50,wind); goto suite;}
-  if (icone == "80d") meteo.pushImage(0,0,50,50,splash);
+  if (ID == "221") meteo.pushImage(0,0,50,50,wind);
 
-  suite:
-  // Affiche icone metéo et température extérieure
+  suite: // Affiche icone metéo et température extérieure
   sprite.setTextDatum(5); // centre gauche                                                                                         
   sprite.drawString(tempExt, 306, 160,2);   
   sprite.drawCircle(310,154,2,TFT_WHITE); // pour °
@@ -503,15 +502,17 @@ void indic(){
    
   // Consommation
   valeur = CO.toInt();
-  for(i = 0;i<8;i++) sprite.fillRect(200,(158-(i*5)),20,4,color0);
-  if (valeur < 0) sprite.fillRect(200,153,20,9,TFT_WHITE); else sprite.fillRect(200,158,20,4,color1);
-  if (valeur > 500) sprite.fillRect(200,153,20,4,color1);
-  if (valeur > 1000) sprite.fillRect(200,148,20,4,color2);
-  if (valeur > 1500) sprite.fillRect(200,143,20,4,color2);
-  if (valeur > 2000) sprite.fillRect(200,138,20,4,color3);
-  if (valeur > 2500) sprite.fillRect(200,133,20,4,color3);
-  if (valeur > 3000) sprite.fillRect(200,128,20,4,color4);
-  if (valeur > 4000) sprite.fillRect(200,123,20,4,color5);
+  for(i = 0;i<8;i++) sprite.fillRect(200,(158-(i*5)),20,4,color0); 
+  if (valeur != 0){
+    if (valeur < 0) sprite.fillRect(200,153,20,9,TFT_WHITE); else sprite.fillRect(200,158,20,4,color1);
+    if (valeur > 500) sprite.fillRect(200,153,20,4,color1);
+    if (valeur > 1000) sprite.fillRect(200,148,20,4,color2);
+    if (valeur > 1500) sprite.fillRect(200,143,20,4,color2);
+    if (valeur > 2000) sprite.fillRect(200,138,20,4,color3);
+    if (valeur > 2500) sprite.fillRect(200,133,20,4,color3);
+    if (valeur > 3000) sprite.fillRect(200,128,20,4,color4);
+    if (valeur > 4000) sprite.fillRect(200,123,20,4,color5);
+  }
 }
 
 /***************************************************************************************
