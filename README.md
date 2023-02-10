@@ -1,7 +1,7 @@
 # Companion
 **Afficheur déporté pour MSunPV**
 
-![Screenshot](img/IMG_6869.jpg) ![Screenshot](img/IMG_6871.jpg) ![Screenshot](IMG_0775.jpg)
+![Screenshot](img/IMG_6869.jpg) ![Screenshot](img/IMG_6871.jpg) ![Screenshot](img/IMG_0775.jpg)
 
 Le Companion est un écran déporté pour suivre la production de panneaux photovoltaiques, la consommation de votre domicile et la recharge solaire de votre cumulus, ces données étant récupérées depuis un routeur solaire M'SunPV.
 
