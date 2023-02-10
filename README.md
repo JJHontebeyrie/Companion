@@ -13,10 +13,16 @@ Par ailleurs une clef API gratuite openweathermap.org est nécessaire (voir sur 
 
 **Fonctions de l'afficheur**
 
-Cette version permer l'affichage de la production des panneaux photovoltaiques, de la recharge d'un cumulus et de la consommation totale.
-Le rafraichissement des informations se fait toutes les 15 secondes. La date et l'heure sont géres automatiquement et tient compte des décalages horaires été/hiver.
+Cette version permer l'affichage de :
+* La production des panneaux photovoltaiques installés
+* La consommation instantanée de votre domicile
+* La consommation utilisée vers le cumulus et sa température de chauffe actuelle
+* Un bouton assistant vous indiquant la possibilité de lancer une machine énergivore
+* La date et l’heure actuelle (avec gestion automatique des heures été/hiver)
+* La météo et la température extérieure actuelle
+* Divers voyants indiquant la mise en route d’un chauffage électrique ou le point de givre
 
-Une icone vidéo vous montre le temps actuel, la température extérieure, le point de givre ainsi que les horaires du lever et coucher de soleil. Le rafraichissement des ces infos, se fait toutes les 15 minutes.
+Le rafraichissement des données photovoltaiques se fait toutes les 15 secondes, celui de la météo toutes les 15 minutes.
 
 Le bouton du T-Diplay situé en bas, si vous avez branché le module par la gauche affiche les cumuls de la consommation, de la production des panneaux, de la réinjection, et de la charge du cumulus.
 
