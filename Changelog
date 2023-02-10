@@ -1,3 +1,6 @@
+11/02/2023
+Correction d'un affichage erroné du bargraph lorsque la consommation est égale à 0.
+
 08/02/2023
 Calcul du lever et coucher de soleil optimisés.
 Indication de la météo, de la température extérieure, du point de givre.
