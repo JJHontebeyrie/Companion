@@ -1,7 +1,7 @@
 # Companion
 **Afficheur déporté pour MSunPV**
 
-![Screenshot](img/IMG_6869.jpg) ![Screenshot](img/IMG_6871.jpg) ![Screenshot](img/IMG_0775.jpg)
+![Screenshot](img/IMG_6869.jpg) ![Screenshot](img/IMG_6871.jpg)
 
 Le Companion est un écran déporté pour suivre la production de panneaux photovoltaiques, la consommation de votre domicile et la recharge solaire de votre cumulus, ces données étant récupérées depuis un routeur solaire M'SunPV.
 
@@ -27,3 +27,4 @@ En cas de problème, le bouton reset situé sur le haut du boitier permet de rel
 
 C'est un routeur solaire permettant d'utiliser le courant normalement réinjecté dans le réseau et de l'utiliser pour recharger un cumulus, lancer une climatisation, faire fonctionner un radiateur, un moteur ou une pompe par exemple. Tous les détails sont sur le site https://ard-tek.com
 
+![Screenshot](img/IMG_0775.jpg)
