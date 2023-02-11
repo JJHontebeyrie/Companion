@@ -1,4 +1,4 @@
-# Companion
+# Companion V2
 **Afficheur déporté pour MSunPV**
 
 ![Screenshot](img/IMG_6869.jpg) ![Screenshot](img/IMG_6871.jpg)
