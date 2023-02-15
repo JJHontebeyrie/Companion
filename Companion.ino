@@ -1,31 +1,30 @@
-/*******************************************
-**               COMPANION                **
-**             Version 2.12               **
-**             @jjhontebeyrie             **
-********************************************
-**            Affichage déporté           **
-**         de consommation solaire        ** 
-**             pour MSunPV                **
-********************************************
-**                ATTENTION               **
-**         Le code est prévu pour         ** 
-**           LILYGO T-Display S3          **   
-********************************************
-
-********************************************
-**        Bibliothèques nécessaires       **
-********************************************
-
-https://github.com/PaulStoffregen/Time
-https://github.com/JChristensen/Timezone
-https://github.com/Bodmer/JSON_Decoder
-https://github.com/Bodmer/OpenWeather
-
-Ces bibliothèques doivent être décompactées
-et les dossiers obtenus sont ensuite collés
-dans /Documents/Arduino/libraries
-
-*******************************************/
+/**************************************************
+**                  COMPANION                    **
+**                Version 2.13                   **
+**                @jjhontebeyrie                 **
+***************************************************
+**               Affichage déporté               **
+**            de consommation solaire            ** 
+**                pour MSunPV                    **
+***************************************************
+**                   ATTENTION                   **
+**            Le code est prévu pour             ** 
+**              LILYGO T-Display S3              **   
+***************************************************
+**           Repository du Companion             **
+**  https://github.com/JJHontebeyrie/Companion   **
+***************************************************
+**          Bibliothèques nécessaires            **
+**                                               **
+**  https://github.com/PaulStoffregen/Time       **
+**  https://github.com/JChristensen/Timezone     **
+**  https://github.com/Bodmer/JSON_Decoder       **
+**  https://github.com/Bodmer/OpenWeather        **
+**                                               ** 
+**  Ces bibliothèques doivent être décompactées  **
+**  et les dossiers obtenus sont ensuite collés  **
+**  dans /Documents/Arduino/libraries            **
+**************************************************/
 
 #include <TFT_eSPI.h>
 #include <WiFi.h>
@@ -36,7 +35,6 @@ dans /Documents/Arduino/libraries
 #include "logo.h"
 #include "images.h"
 #include "meteo.h"
-
 
 TFT_eSPI lcd = TFT_eSPI();
 TFT_eSprite sprite = TFT_eSprite(&lcd);   // Tout l'écran
@@ -82,6 +80,7 @@ const int freq = 1000;
 const int ledChannel = 0;
 const int resolution = 8;
 int dim = 150; // Eclairage intermédiaire au lancement
+int dimActuel = 150; // Pour reprise si veille
 bool inverse = false;
 int x;
 
@@ -105,7 +104,7 @@ String lever, coucher, date, tempExt, icone, ID;
 OW_Weather ow; // Weather forecast librairie instance
 // Update toutes les 15 minutes, jusqu'à 1000 requêtes par jour gratuit (soit ~40 par heure)
 const int UPDATE_INTERVAL_SECS = 15 * 60UL; // 15 minutes
-boolean booted = true;
+bool booted = true;
 long lastDownloadUpdate = millis();
 String timeNow = "";
 
@@ -180,10 +179,13 @@ void setup(){
   // Paramètres pour dimmer
   ledcSetup(ledChannel, freq, resolution);
   ledcAttachPin(PIN_LCD_BL, ledChannel);
+
+  // Affichage texte sur écran de départ
   depart.setTextColor(TFT_RED,TFT_WHITE);
   depart.setTextDatum(4);
   depart.drawString("CONNEXION OK (" + (IP) + ")",150,126,2);
   depart.pushSprite(10,20);
+
   // Tamisage écran dim 200 (va de 0 à 255)
   ledcWrite(ledChannel, dim);
 }
@@ -192,19 +194,24 @@ void setup(){
 //                                 Routine LOOP                                      //
 /////////////////////////////////////////////////////////////////////////////////////// 
 void loop(){
+  // Teste si veille demandée
+  if (veille) {
+    if (PV.toInt() == 0) dim = 50; else dim = dimActuel; // on met l'écran en faible luminosité si pv = 0 
+    ledcWrite(ledChannel, dim);
+  }
+
   // Etat batterie
-    volt = (analogRead(4) * 2 * 3.3 * 1000) / 4096;
+  volt = (analogRead(4) * 2 * 3.3 * 1000) / 4096;
 
   // Lit heure
-  if(lastTime + 1000 < millis()){
+  if (lastTime + 1000 < millis()){
     drawTime();    
     lastTime = millis();
-   }
+  }
 
   // Données météo
-    // Teste pour voir si un rafraissement est nécessaire
-  if (booted || (millis() - lastDownloadUpdate > 1000UL * UPDATE_INTERVAL_SECS))
-  {
+  // Teste pour voir si un rafraissement est nécessaire
+  if (booted || (millis() - lastDownloadUpdate > 1000UL * UPDATE_INTERVAL_SECS)){
     donneesmeteo();
     lastDownloadUpdate = millis();
   }
@@ -212,10 +219,10 @@ void loop(){
   // Affiche données
   if (awaitingArrivals) {
    if (!arrivalsRequested) {
-        arrivalsRequested = true;
-        getArrivals();
-        decrypte();
-        Affiche();         
+      arrivalsRequested = true;
+      getArrivals();
+      decrypte();
+      Affiche();         
     }  
   }
 
@@ -226,11 +233,11 @@ void loop(){
     lastMSunPV = millis();
   }
 
-  // Si un bouton pressé, affiche cumuls momentanément
+  // Si bouton pressé, affiche cumuls momentanément
   if (digitalRead(14) == 0) AfficheCumul();
 
   // Modification intensité lumineuse sous forme va  & vient
-  if (digitalRead(0) == 0) Eclairage();
+  if ((digitalRead(0) == 0) and (!veille)) Eclairage();
 
   booted = false;
 } 
@@ -280,7 +287,7 @@ void Affiche(){
   if (ID == "221") meteo.pushImage(0,0,50,50,wind);
 
   suite: // Affiche icone metéo et température extérieure
-  sprite.setTextDatum(5); // centre gauche                                                                                         
+  sprite.setTextDatum(5); // centre droit                                                                                         
   sprite.drawString(tempExt, 306, 160,2);   
   sprite.drawCircle(310,154,2,TFT_WHITE); // pour °
   sprite.setTextDatum(4); // retour au centre milieu
@@ -295,51 +302,46 @@ void Affiche(){
   
   // Affichage éventuel de la température si sonde validée
   if (sonde) {
-    sprite.setTextDatum(5); // centre gauche 
+    sprite.setTextDatum(5); // centre droit 
     sprite.drawString(TEMPCU,33,85,2);
     sprite.drawCircle(36,79,2,TFT_WHITE); // pour °
     sprite.setTextDatum(4); // retour au centre milieu
     sprite.drawCircle(25,84,20,color1);
     sprite.drawCircle(25,84,19,color1);
     if (TEMPCU.toInt() > 30) {
-        sprite.drawCircle(25,84,20,color8);
-        sprite.drawCircle(25,84,19,color8);
-      }
+      sprite.drawCircle(25,84,20,color8);
+      sprite.drawCircle(25,84,19,color8);}
     if (TEMPCU.toInt() > 50) {
-        sprite.drawCircle(25,84,20,color4);
-        sprite.drawCircle(25,84,19,color4);
-      }
+      sprite.drawCircle(25,84,20,color4);
+      sprite.drawCircle(25,84,19,color4);}
     if (TEMPCU.toInt() > 60) {
-        sprite.drawCircle(25,84,20,color5);
-        sprite.drawCircle(25,84,19,color5);
-      }
+      sprite.drawCircle(25,84,20,color5);
+      sprite.drawCircle(25,84,19,color5);}
   } 
 
-  // Police d'affichage 
-  sprite.setFreeFont(&Orbitron_Light_24);
+  // Affichage des valeurs des compteurs
+  sprite.setFreeFont(&Orbitron_Light_24); // police d'affichage
   // Affichage valeur PV
-  if (PV.toInt() >= residuel) sprite.drawString(PV +" w",115,35);   
-  // Affichage valeur Cumulus
-  sprite.drawString(CU +" w",115,92); 
-  // Affichage valeur Consommation
-  sprite.drawString(CO +" w",115,150);
-
-  //Voyant de consommation
-  if (CO.toInt() > PV.toInt()) voyant.pushImage(0,0,68,68,BtnR);
-  if (PV.toInt() > CO.toInt()) voyant.pushImage(0,0,68,68,BtnB); 
-  if ((PV.toInt() > CO.toInt()) and (PV.toInt() > 1200)) voyant.pushImage(0,0,68,68,BtnV);  
-  if (CO.toInt() < 0) voyant.pushImage(0,0,68,68,BtnV);
-  if (PV.toInt() < residuel) {
+  if (PV.toInt() >= residuel) sprite.drawString(PV +" w",115,35);
+  else {
     // Hors service & lever/coucher 
     sun.pushImage(0,0,220,29,Soleil); 
     sun.pushToSprite(&sprite,3,20,TFT_BLACK);
     sprite.setTextColor(TFT_YELLOW,TFT_BLACK);
     sprite.drawString(lever, 23, 15,2);
     sprite.drawString(coucher, 203, 15,2);
-    sprite.setTextColor(TFT_WHITE,TFT_BLACK);
-    // Voyant
-    voyant.pushImage(0,0,68,68,BtnR);
-  }
+    sprite.setTextColor(TFT_WHITE,TFT_BLACK);}   
+  // Affichage valeur Cumulus
+  sprite.drawString(CU +" w",115,92); 
+  // Affichage valeur Consommation
+  sprite.drawString(CO +" w",115,150);
+
+  //Voyant assistant de consommation
+  if (CO.toInt() > PV.toInt()) voyant.pushImage(0,0,68,68,BtnR);
+  if (PV.toInt() > CO.toInt()) voyant.pushImage(0,0,68,68,BtnB); 
+  if ((PV.toInt() > CO.toInt()) and (PV.toInt() > 1200)) voyant.pushImage(0,0,68,68,BtnV);  
+  if (CO.toInt() < 0) voyant.pushImage(0,0,68,68,BtnV);
+  if (PV.toInt() < residuel) voyant.pushImage(0,0,68,68,BtnR);
                   
   // En cas de chauffage électrique
   if (chauffageElectr) {               
@@ -435,23 +437,22 @@ void decrypte(){
   if (CU.toInt() <= residuel) CU = "0"; // Légère consommation due au thermostat du cumulus
 
   //  >>>>>>>>>>>>>  Routine made by Patrick, mon sauveur !  <<<<<<<<<<<<<<<
-    for(int i = 0; i < 8; i++)                  //à remplacer par nbre de compteurs à afficher
-    {
-        char xx[16];
-        int yy[16];
-        float zz[16];
+  for(int i = 0; i < 8; i++) {              //à remplacer par nbre de compteurs à afficher
+    char xx[16];
+    int yy[16];
+    float zz[16];
         
-        MsgSplit2[i].toCharArray(xx,16);
-        sscanf(xx, "%x", &yy[i]);
-        //Serial.println(yy[i]);
-        zz[i] = yy[i];
-        zz[i] /= 10;                     //à remplacer par decim
-        MsgSplit2[i] = String(zz[i],1);  //à remplacer par autre unité si besoin
-        MsgSplit2[i].replace('.', ',');                       
-    }
+    MsgSplit2[i].toCharArray(xx,16);
+    sscanf(xx, "%x", &yy[i]);
+    //Serial.println(yy[i]);
+    zz[i] = yy[i];
+    zz[i] /= 10;                     //à remplacer par decim
+    MsgSplit2[i] = String(zz[i],1);  //à remplacer par autre unité si besoin
+    MsgSplit2[i].replace('.', ',');
+  }
+
   // Affichage des cumuls dans le Moniteur Série
-  for(int j = 0;j<8;j++) { 
-    Serial.print("Cumul "); Serial.print (j); Serial.println(" >> " + MsgSplit2[j]);}
+  for(int j = 0;j<8;j++) {Serial.print("Cumul "); Serial.print (j); Serial.println(" >> " + MsgSplit2[j]);}
 
   //**************************************************************
   // Suivant les modifications que vous avez apporté au MSunPV
@@ -528,8 +529,9 @@ void Eclairage(){
     dim = dim + 50;
     if (dim >= 250) {dim = 250; inverse = false;}
   }
-    delay(300);
-    Barlight();
+  delay(300);
+  dimActuel = dim;
+  Barlight();
 }
 
 /***************************************************************************************
@@ -551,10 +553,10 @@ void Barlight(){
 **                            Gestion de la batterie
 ***************************************************************************************/
 void batt(){
-// Voltage pour batterie, les chiffres sont à modifier suivant votre batterie
-if (volt < 3.5) sprite.fillRect(302,127,12,3,color0);
-if (volt < 3) sprite.fillRect(302,132,12,3,color0);
-if (volt < 2.5) sprite.fillRect(302,137,12,3,color0);
+  // Voltage pour batterie, les chiffres sont à modifier suivant votre batterie
+  if (volt < 3.5) sprite.fillRect(302,127,12,3,color0);
+  if (volt < 3) sprite.fillRect(302,132,12,3,color0);
+  if (volt < 2.5) sprite.fillRect(302,137,12,3,color0);
 }
 
 /***************************************************************************************
@@ -659,9 +661,7 @@ void split(String * vecSplit, int dimArray,String content,char separator){
   int posInit = 0;
   while(countVec<dimArray){
     posSep = content.indexOf(separator,posSep);
-    if(posSep<0){
-      return;
-    }        
+    if(posSep<0) return;       
     String splitStr = content.substring(posInit,posSep);
     posSep = posSep+1; 
     posInit = posSep;
@@ -675,10 +675,8 @@ void split(String * vecSplit, int dimArray,String content,char separator){
 ***************************************************************************************/
 String strTime(time_t unixTime)
 {
-  
   String localTime = "";
   time_t local_time = TIMEZONE.toLocal(unixTime, &tz1_Code);
-
 
   if (hour(local_time) < 10) localTime += "0";
   localTime += hour(local_time);
@@ -751,4 +749,5 @@ void test(){
   tempExt = "3";
   sonde = true;
   chauffageElectr = true;
+  veille = false;
 }
