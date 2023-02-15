@@ -36,6 +36,9 @@ bool chauffageElectr = true;
 // Mettez alors à true et vérifiez dans la routine 'decrypte' la bonne sonde
 bool sonde = false;
 
+// Mise en veille affichage écran quand PV=0 (idée de Defaliz)
+bool veille = false;
+
 // Localisation de votre ville et décalage horaire pour lever/coucher soleil
 String latitude =  "44.8378"; // 90.0000 to -90.0000 negative for Southern hemisphere
 String longitude = "-0.594"; // 180.000 to -180.000 negative for West
