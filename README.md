@@ -17,6 +17,7 @@ Cette version permer l'affichage de :
 * La production des panneaux photovoltaiques installés
 * La consommation instantanée de votre domicile
 * La consommation utilisée vers le cumulus et sa température de chauffe actuelle
+* Les cumuls journaliers de la production, de la consommation, de la chauffe cumulus et de la ré-injection
 * Un bouton assistant vous indiquant la possibilité de lancer une machine énergivore
 * La date et l’heure actuelle (avec gestion automatique des heures été/hiver)
 * La météo et la température extérieure actuelle
