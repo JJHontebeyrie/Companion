@@ -1,3 +1,7 @@
+16/02/2023
+Version 2.30. Correction du relevé météo qui n'était accessible qu'avec des clés API nécessitant un abonnement. les clés gratuites fonctionnent sans problème. 
+Ajout de la fonction veille lorsque la production des panneaux est nulle la nuit.
+
 11/02/2023
 Correction d'un affichage erroné du bargraph lorsque la consommation est égale à 0.
 
