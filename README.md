@@ -8,7 +8,7 @@ Le Companion est un écran déporté pour suivre la production de panneaux photo
 Cet afficheur est conçu pour être utilisé avec le LILYGO T-Display S3 et certaines bibliothèques sont nécessaires pour un fonctionnement correct sous Arduino IDE. Tous les détails sont dans cette vidéo https://youtu.be/8KDCmyMWrUk ainsi que dans le document pdf de ce repository.
 
 
-Par ailleurs une clef API gratuite openweathermap.org est nécessaire (voir sur leur site). Créez un compte gratuit pour ensuite obtenir une clef API directement utilisable sur votre Companion. Cependant après certains retours, la gestion de cette clé pose des problèmes à certains utilisateurs, la version 1 incluse zippée permet cependant d'utiliser le Companion sans les données météos. 
+Par ailleurs une clef API gratuite openweathermap.org est nécessaire (voir sur leur site). Créez un compte gratuit pour ensuite obtenir une clef API directement utilisable sur votre Companion. Les problèmes de réception des données OpenWeather ont été corrigés.La version 1 incluse zippée permet cependant d'utiliser le Companion sans les données météos. 
 
 
 **Fonctions de l'afficheur**
