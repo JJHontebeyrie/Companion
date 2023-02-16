@@ -20,6 +20,7 @@ Cette version permer l'affichage de :
 * Un bouton assistant vous indiquant la possibilité de lancer une machine énergivore
 * La date et l’heure actuelle (avec gestion automatique des heures été/hiver)
 * La météo et la température extérieure actuelle
+* L'heure du lever et coucher de soleil
 * Divers voyants indiquant la mise en route d’un chauffage électrique ou le point de givre
 
 Le rafraichissement des données photovoltaiques se fait toutes les 15 secondes, celui de la météo toutes les 15 minutes.
