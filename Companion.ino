@@ -1,6 +1,6 @@
 /**************************************************
 **                  COMPANION                    **
-**                Version 2.13                   **
+**                Version 2.20                   **
 **                @jjhontebeyrie                 **
 ***************************************************
 **               Affichage déporté               **
@@ -561,28 +561,32 @@ void batt(){
 
 /***************************************************************************************
 **                           Réception des données météo
+**                 Valeurs issues de Open Weather (Gestion One Call)
 ***************************************************************************************/
+/*
 void donneesmeteo(){
+  // Valeurs issues de Open Weather (Gestion One Call)
   // Create the structures that hold the retrieved weather
   OW_current *current = new OW_current;
   OW_hourly *hourly = new OW_hourly;
   OW_daily  *daily = new OW_daily;
-
+  
+  OW_forecast  *forecast = new OW_forecast;
   ow.getForecast(current, hourly, daily, api_key, latitude, longitude, units, language);
-  Serial.println("");
 
-  // Valeurs issues de Open Weather
   Serial.println("############### Données météo ###############");
   Serial.print("Latitude            : "); Serial.println(ow.lat);
   Serial.print("Longitude           : "); Serial.println(ow.lon);
   Serial.print("Timezone            : "); Serial.println(ow.timezone);
   Serial.print("Heure actuelle      : "); Serial.println(strTime(current->dt));
   Serial.print("Lever soleil        : "); Serial.println(strTime(current->sunrise));
+  Serial.print("sunrise             : "); Serial.print(strTime(forecast->sunrise));
   Serial.print("Coucher soleil      : "); Serial.println(strTime(current->sunset));
   Serial.print("temperature         : "); Serial.println(current->temp);
   Serial.print("description         : "); Serial.println(current->description);
   Serial.print("icone               : "); Serial.println(current->icon);
   Serial.print("ID                  : "); Serial.println(current->id);
+
   lever = strLocalTime(current->sunrise);
   coucher = strLocalTime(current->sunset);
   date = strDate(current->dt);
@@ -591,11 +595,47 @@ void donneesmeteo(){
   icone = (current->icon);
   ID  = (current->id);
   if (wink) icone ="80d";
-  
+
   // Effacement des chaines pour libérer la mémoire
   delete current;
   delete hourly;
   delete daily;
+  }
+  */
+
+/***************************************************************************************
+**                           Réception des données météo
+**                 Valeurs issues de Open Weather (Gestion Forecast)
+***************************************************************************************/
+void donneesmeteo(){
+  // Valeurs issues de Open Weather (Gestion Forecast)
+  OW_forecast  *forecast = new OW_forecast;
+  ow.getForecast(forecast, api_key, latitude, longitude, units, language);
+
+  Serial.println("");
+  Serial.println("############### Données météo ###############");
+  Serial.print("Latitude            : "); Serial.println(ow.lat);
+  Serial.print("Longitude           : "); Serial.println(ow.lon);
+  Serial.print("Timezone            : "); Serial.println(ow.timezone);
+  Serial.print("Heure actuelle      : "); Serial.println(strTime(forecast->dt[0]));
+  Serial.print("Lever soleil        : "); Serial.println(strTime(forecast->sunrise));
+  Serial.print("Coucher soleil      : "); Serial.println(strTime(forecast->sunset));
+  Serial.print("temperature         : "); Serial.println(forecast->temp[0]);
+  Serial.print("description         : "); Serial.println(forecast->description[0]);
+  Serial.print("icone               : "); Serial.println(forecast->icon[0]);
+  Serial.print("ID                  : "); Serial.println(forecast->id[0]);
+
+  lever = strLocalTime(forecast->sunrise);
+  coucher = strLocalTime(forecast->sunset);
+  date = strDate(forecast->dt[0]);
+  tempExt = String(forecast->temp[0], 0);  // Température sans décimale
+  if (tempExt.length() < 2) tempExt = " " + tempExt; //et sur 2 caractères
+  icone = (forecast->icon[0]);
+  ID  = (forecast->id[0]);
+  if (wink) icone ="80d";
+
+  // Effacement des chaines pour libérer la mémoire
+  delete forecast;
 }
 
 /***************************************************************************************
@@ -739,7 +779,7 @@ String strDate(time_t unixTime)
 
 /***************************************************************************************
 **     Routine de test pour afficher toutes les icones sur l'écran
-**               Décommenter la ligne 243 pour l'activer
+**               Décommenter la ligne 250 pour l'activer
 ***************************************************************************************/
 void test(){
   PV = "0";
