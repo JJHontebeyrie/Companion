@@ -1,6 +1,6 @@
 /**************************************************
 **                  COMPANION                    **
-**                Version 2.20                   **
+**                Version 2.21                   **
 **                @jjhontebeyrie                 **
 ***************************************************
 **               Affichage déporté               **
@@ -80,8 +80,7 @@ const int freq = 1000;
 const int ledChannel = 0;
 const int resolution = 8;
 int dim = 150; // Eclairage intermédiaire au lancement
-int dimActuel = 150; // Pour reprise si veille
-bool inverse = false;
+bool inverse = true;
 int x;
 
 // Variables affichant les valeurs reçues depuis le MSunPV
@@ -196,7 +195,7 @@ void setup(){
 void loop(){
   // Teste si veille demandée
   if (veille) {
-    if (PV.toInt() == 0) dim = 50; else dim = dimActuel; // on met l'écran en faible luminosité si pv = 0 
+    if (PV.toInt() == 0) dim = 50; // on met l'écran en faible luminosité si pv = 0 
     ledcWrite(ledChannel, dim);
   }
 
@@ -237,7 +236,7 @@ void loop(){
   if (digitalRead(14) == 0) AfficheCumul();
 
   // Modification intensité lumineuse sous forme va  & vient
-  if ((digitalRead(0) == 0) and (!veille)) Eclairage();
+  if (digitalRead(0) == 0) Eclairage();
 
   booted = false;
 } 
@@ -520,7 +519,7 @@ void indic(){
 **      Fait varier l'intensité d'éclairage de 50 à 250 dans un sens et l'inverse
 ***************************************************************************************/
 void Eclairage(){
-  if (inverse == false) {
+  if (!inverse) {
     dim = dim - 50;
     if (dim <= 50) {dim = 50; inverse = true;}
   }
@@ -530,7 +529,7 @@ void Eclairage(){
     if (dim >= 250) {dim = 250; inverse = false;}
   }
   delay(300);
-  dimActuel = dim;
+  veille = false; // Si on clique bouton, veille annulée
   Barlight();
 }
 
@@ -571,7 +570,6 @@ void donneesmeteo(){
   OW_hourly *hourly = new OW_hourly;
   OW_daily  *daily = new OW_daily;
   
-  OW_forecast  *forecast = new OW_forecast;
   ow.getForecast(current, hourly, daily, api_key, latitude, longitude, units, language);
 
   Serial.println("############### Données météo ###############");
@@ -580,7 +578,7 @@ void donneesmeteo(){
   Serial.print("Timezone            : "); Serial.println(ow.timezone);
   Serial.print("Heure actuelle      : "); Serial.println(strTime(current->dt));
   Serial.print("Lever soleil        : "); Serial.println(strTime(current->sunrise));
-  Serial.print("sunrise             : "); Serial.print(strTime(forecast->sunrise));
+  Serial.print("sunrise             : "); Serial.print(strTime(current->sunrise));
   Serial.print("Coucher soleil      : "); Serial.println(strTime(current->sunset));
   Serial.print("temperature         : "); Serial.println(current->temp);
   Serial.print("description         : "); Serial.println(current->description);
@@ -616,7 +614,7 @@ void donneesmeteo(){
   Serial.println("############### Données météo ###############");
   Serial.print("Latitude            : "); Serial.println(ow.lat);
   Serial.print("Longitude           : "); Serial.println(ow.lon);
-  Serial.print("Timezone            : "); Serial.println(ow.timezone);
+  Serial.print("Timezone            : "); Serial.println(forecast->timezone);
   Serial.print("Heure actuelle      : "); Serial.println(strTime(forecast->dt[0]));
   Serial.print("Lever soleil        : "); Serial.println(strTime(forecast->sunrise));
   Serial.print("Coucher soleil      : "); Serial.println(strTime(forecast->sunset));
