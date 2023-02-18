@@ -1,5 +1,8 @@
+18/02/2023
+Version 2.21 -  Veille désactivable
+
 16/02/2023
-Version 2.30. Correction du relevé météo qui n'était accessible qu'avec des clés API nécessitant un abonnement. Les clés gratuites fonctionnent 
+Version 2.20 -  Correction du relevé météo qui n'était accessible qu'avec des clés API nécessitant un abonnement. Les clés gratuites fonctionnent 
 sans problème désormais. 
 Ajout de la fonction veille lorsque la production des panneaux est nulle la nuit.
 
