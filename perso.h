@@ -29,6 +29,9 @@ bool nbrentier = true;  // ou false pour chiffres avec virgule
 int puissance = 5000; // production max en watt
 int cumulus = 3000; // puissance cumulus en watt
 
+// Si l'alimentation se fait par batterie (true pour oui et false pour non)
+bool lipo = false;
+
 // Chauffage par radiateurs électriques, mettez false sinon
 bool chauffageElectr = true;
 
