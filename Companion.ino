@@ -1,6 +1,6 @@
 /**************************************************
 **                  COMPANION                    **
-**                Version 2.21                   **
+**                Version 2.22                   **
 **                @jjhontebeyrie                 **
 ***************************************************
 **               Affichage déporté               **
@@ -68,6 +68,7 @@ long lastMSunPV = 0;
 String Months[13]={"Mois","Jan","Fev","Mars","Avril","Mai","Juin","Juill","Aout","Sept","Oct","Nov","Dec"};
 String IP;  // Adresse IP de connexion du Companion
 uint32_t volt ; // Voltage batterie
+int vertical = 15;
 bool wink = false;
 
 // Pointeurs pour relance recherche valeurs
@@ -111,9 +112,8 @@ String timeNow = "";
 //                                 Routine SETUP                                     //
 /////////////////////////////////////////////////////////////////////////////////////// 
 void setup(){ 
-  // Allume écran (optionnel)
-  //pinMode(15,OUTPUT);
-  //digitalWrite(15,1);
+  // Activation du port batterie interne
+  if (lipo) {pinMode(15,OUTPUT); digitalWrite(15,1);}
 
   //Initialisation des 2 boutons
   pinMode(0, INPUT_PULLUP);
@@ -263,10 +263,12 @@ void Affiche(){
   //Panneau de droite sur l'écran : heure, date, dimer, batterie
   sprite.drawRoundRect(234,0,80,31,3,TFT_WHITE);
   sprite.drawRoundRect(234,33,80,20,3,TFT_WHITE);
+  if (lipo){
+    vertical = 0;
+    batterie.pushImage(0,0,24,24,pile);
+    batterie.pushToSprite(&sprite,296,121,TFT_BLACK);}
   light.pushImage(0,0,24,24,bulb);
-  light.pushToSprite(&sprite,296,57,TFT_BLACK);
-  batterie.pushImage(0,0,24,24,pile);
-  batterie.pushToSprite(&sprite,296,121,TFT_BLACK);
+  light.pushToSprite(&sprite,296,(57 + vertical),TFT_BLACK);
 
   // Affichage Météo
   meteo.pushImage(0,0,50,50,unknown);
@@ -538,10 +540,10 @@ void Eclairage(){
 ***************************************************************************************/
 void Barlight(){
   x = dim/50; // steps de 50
-  for(int i = 0;i<5;i++) sprite.fillRect(302,85+(i*6),12,5,color0);
-  for(int i = 0;i<x;i++) sprite.fillRect(302,85+(i*6),12,5,color3);
+  for(int i = 0;i<5;i++) sprite.fillRect(302,85+vertical+(i*6),12,5,color0);
+  for(int i = 0;i<x;i++) sprite.fillRect(302,85+vertical+(i*6),12,5,color3);
   // Gestion batterie
-  batt();
+  if (lipo) batt();
   // Rafraichissement de tout l'écran
   sprite.pushSprite(0,0);
   // Réglage de la luminosité
