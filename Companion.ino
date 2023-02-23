@@ -24,6 +24,11 @@
 **  Ces bibliothèques doivent être décompactées  **
 **  et les dossiers obtenus sont ensuite collés  **
 **  dans /Documents/Arduino/libraries            **
+***************************************************
+** Les valeurs correspondantes à vos branchements**
+** et sondes sont à modifier éventuellement      **
+** aux lignes 434 et suivantes pour les index    **
+** et 481 et suivantes pour les cumuls           **
 **************************************************/
 
 #include <TFT_eSPI.h>
@@ -418,15 +423,26 @@ void decrypte(){
 
   // Mise en variables des cumuls trouvés MsgSplit2[0 à 7]
   split(MsgSplit2,8,MsgContent,';');
-  
-  // Récupération des données à afficher
-  CO = MsgSplit[0];  // Consommation
-  PV = MsgSplit[1];  // Panneaux PV 
+
+  /***************************************************************************************
+  **                               MODIFICATION DES INDEX
+  ****************************************************************************************
+  **   Suivant les modifications que vous avez apporté au MSunPV
+  **   il est possible que les valeurs souhaitées ne soient pas
+  **   celles affichées. Vérifiez sur le moniteur série le bon index 
+  ***************************************************************************************/  
+  CO = MsgSplit[0];     // Consommation
+  PV = MsgSplit[1];     // Panneaux PV 
+  CU = MsgSplit[2];     // Cumulus
+  TEMPCU = MsgSplit[5]; // Sonde température cumulus
+  //*************************************************************************************
+
+  // Formatage des valeurs pour affichage sur l'écran 
   PV = String(abs(PV.toInt()));  // (avec prod en + ou en -)
-  CU = MsgSplit[2];  // Cumulus
-  TEMPCU = MsgSplit[5];  // Sonde température cumulus
   TEMPCU = TEMPCU.toInt();
   if (TEMPCU.length() < 2) TEMPCU = " " + TEMPCU; // 2 caractères
+
+  // Affichage en entiers si demandé dans perso.h
   if (nbrentier) {
     CO = String(CO.toInt()); 
     PV = String(PV.toInt());
@@ -455,16 +471,20 @@ void decrypte(){
   // Affichage des cumuls dans le Moniteur Série
   for(int j = 0;j<8;j++) {Serial.print("Cumul "); Serial.print (j); Serial.println(" >> " + MsgSplit2[j]);}
 
-  //**************************************************************
-  // Suivant les modifications que vous avez apporté au MSunPV
-  // il est possible que les cumuls souhaités ne soient pas
-  // ceux affichés. Vérifiez sur le moniteur série le bon index
+  /***************************************************************************************
+  **                               MODIFICATION DES CUMULS
+  ****************************************************************************************
+  **   Suivant les modifications que vous avez apporté au MSunPV
+  **   il est possible que les cumuls souhaités ne soient pas
+  **   ceux affichés. Vérifiez sur le moniteur série le bon index
+  ***************************************************************************************/   
   CUMCO = MsgSplit2[0];   // Cumul Conso
   CUMINJ = MsgSplit2[1];  // Cumul Injection
   CUMPV = MsgSplit2[2];   // Cumul Panneaux
   CUMBAL = MsgSplit2[3];  // Cumul Ballon cumulus
-  //**************************************************************
-
+  //*************************************************************************************
+  
+  // Affichage en entiers si demandé dans perso.h
   if (nbrentier) {
     CUMCO = String(CUMCO.toInt()); 
     CUMINJ = String(CUMINJ.toInt()); 
@@ -779,7 +799,7 @@ String strDate(time_t unixTime)
 
 /***************************************************************************************
 **     Routine de test pour afficher toutes les icones sur l'écran
-**               Décommenter la ligne 250 pour l'activer
+**               Décommenter la ligne 254 pour l'activer
 ***************************************************************************************/
 void test(){
   PV = "0";
