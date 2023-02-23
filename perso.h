@@ -1,9 +1,15 @@
-//*****************************************************************************
-//************************  Données personnelles  *****************************
-//*****************************************************************************
-//     Mettez ici toutes vos valeurs personnelles pour le fonctionnement    ***
-//              correct de l'afficheur externe Companion                    ***
-//*****************************************************************************
+/******************************************************************************
+**************************  Données personnelles  *****************************
+*******************************************************************************
+***    Mettez ici toutes vos valeurs personnelles pour le fonctionnement    ***
+***             correct de l'afficheur externe Companion                    ***
+*******************************************************************************
+***     >>>>>  Les valeurs correspondantes à vos branchements               ***
+***            et sondes sont à modifier éventuellement                     ***
+***            dans le fichier companion.ino                                ***
+***            aux lignes 434 et suivantes pour les index                   ***
+***            et 481 et suivantes pour les cumuls                          ***
+******************************************************************************/
 
 // Vos codes accès au wifi et adresse de votre MSunPV dans votre réseau
 // Remplacez les * par vos valeurs
