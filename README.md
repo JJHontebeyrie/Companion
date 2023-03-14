@@ -23,6 +23,7 @@ Cette version permer l'affichage de :
 * La météo et la température extérieure actuelle
 * L'heure du lever et coucher de soleil
 * Divers voyants indiquant la mise en route d’un chauffage électrique ou le point de givre
+* Fonction serveur web avec possibilité de lire les données depuis un navigateur
 
 Le rafraichissement des données photovoltaiques se fait toutes les 15 secondes, celui de la météo toutes les 15 minutes.
 
