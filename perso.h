@@ -1,24 +1,29 @@
 /******************************************************************************
 **************************  Données personnelles  *****************************
-*******************************************************************************
+****************************** (version 2.30) *********************************
 ***    Mettez ici toutes vos valeurs personnelles pour le fonctionnement    ***
 ***             correct de l'afficheur externe Companion                    ***
 *******************************************************************************
 ***     >>>>>  Les valeurs correspondantes à vos branchements               ***
 ***            et sondes sont à modifier éventuellement                     ***
 ***            dans le fichier companion.ino                                ***
-***            aux lignes 434 et suivantes pour les index                   ***
-***            et 481 et suivantes pour les cumuls                          ***
+***            aux lignes 453 et suivantes pour les index                   ***
+***            et 500 et suivantes pour les cumuls                          ***
 ******************************************************************************/
 
-// Vos codes accès au wifi et adresse de votre MSunPV dans votre réseau
-// Remplacez les * par vos valeurs
+// Vos codes accès au wifi. Remplacez les * par vos valeurs
 const char* ssid     = "******";
 const char* password = "******";
 
 // Adresse IP du serveur local (ici MSunPV). Il se peut suivant votre réseau
 // que vous ayiez besion de remplacer toute la chaine, respectez . entre les chiffres
-char server[] = "192.168.1.**";
+char serveur[] = "192.168.1.**";
+
+// Activation de la fonction serveur Web (idée et conception Bellule)
+// Ceci permet une lecture sur un téléphone par exemple mais aussi
+// à distance si l'adresse du companion est fixe. Commencez par
+// vous connecter sur l'adresse affichée sur l'écran d'accueil
+bool ServeurWeb = true;
 
 // Boitier horizontal prise à gauche, pour prise à droite mettez rotation = 1
 int rotation = 3;
@@ -42,7 +47,7 @@ bool lipo = false;
 bool chauffageElectr = true;
 
 // Affichage de température si vous avez installé une sonde sur le cumulus
-// Mettez alors à true et vérifiez dans la routine 'decrypte' la bonne sonde
+// Mettez alors à true et vérifiez ligne 437 dans companion.ino
 bool sonde = false;
 
 // Mise en veille affichage écran quand PV=0 (idée de Defaliz)
