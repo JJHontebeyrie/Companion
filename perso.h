@@ -19,12 +19,6 @@ const char* password = "******";
 // que vous ayiez besion de remplacer toute la chaine, respectez . entre les chiffres
 char serveur[] = "192.168.1.**";
 
-// Activation de la fonction serveur Web (idée et conception Bellule)
-// Ceci permet une lecture sur un téléphone par exemple mais aussi
-// à distance si l'adresse du companion est fixe. Commencez par
-// vous connecter sur l'adresse affichée sur l'écran d'accueil
-bool ServeurWeb = true;
-
 // Boitier horizontal prise à gauche, pour prise à droite mettez rotation = 1
 int rotation = 3;
 
