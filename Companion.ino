@@ -1,6 +1,6 @@
 /**************************************************
 **                  COMPANION                    **
-**                Version 2.22                   **
+**                Version 2.30                   **
 **                @jjhontebeyrie                 **
 ***************************************************
 **               Affichage déporté               **
@@ -113,6 +113,19 @@ bool booted = true;
 long lastDownloadUpdate = millis();
 String timeNow = "";
 
+// Set web server port number to 80
+WiFiServer server(80);
+
+// Variable to store the HTTP request
+String header;
+
+// Current time
+unsigned long currentTime = millis();
+// Previous time
+unsigned long previousTime = 0; 
+// Define timeout time in milliseconds (example: 2000ms = 2s)
+const long timeoutTime = 2000;
+
 ///////////////////////////////////////////////////////////////////////////////////////
 //                                 Routine SETUP                                     //
 /////////////////////////////////////////////////////////////////////////////////////// 
@@ -192,12 +205,18 @@ void setup(){
 
   // Tamisage écran dim 200 (va de 0 à 255)
   ledcWrite(ledChannel, dim);
+
+  if (ServeurWeb) server.begin();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////
 //                                 Routine LOOP                                      //
 /////////////////////////////////////////////////////////////////////////////////////// 
 void loop(){
+
+  // Affichage des valeurs sur une adresse IP
+  if (ServeurWeb) lecture;
+
   // Teste si veille demandée
   if (veille) {
     if (PV.toInt() == 0) dim = 50; // on met l'écran en faible luminosité si pv = 0 
@@ -263,7 +282,7 @@ void Affiche(){
   sprite.drawRoundRect(0,57,226,55,3,TFT_WHITE);
   sprite.drawString("CUMULUS",115,68,2);
   sprite.drawRoundRect(0,114,226,55,3,TFT_WHITE);
-  sprite.drawString("CONSOMMATION",115,126,2);
+  sprite.drawString("CONSOMMATION EDF",115,126,2);
 
   //Panneau de droite sur l'écran : heure, date, dimer, batterie
   sprite.drawRoundRect(234,0,80,31,3,TFT_WHITE);
@@ -665,12 +684,12 @@ void getArrivals() {
  // Use WiFiClient class to create TLS connection
   Serial.println("\nInitialisation de la connexion au serveur...");
   // if you get a connection, report back via serial.connect(server, 80))
-  if (client.connect(server, 80)) {
+  if (client.connect(serveur, 80)) {
     Serial.println("Connecté au serveur");
     
     // Make a HTTP request:
     client.print("GET "); client.print(path); client.println(" HTTP/1.1");
-    client.print("Host: "); client.println(server);
+    client.print("Host: "); client.println(serveur);
     client.println();
   
     while(!client.available()); //wait for client data to be available
@@ -795,6 +814,89 @@ String strDate(time_t unixTime)
   localDate2 += month(local_time);
   if (localDate2 == "14") wink = true;
   return localDate;
+}
+
+/***************************************************************************************
+**  Fonction serveur Web - permet de lire les données d'une adresse IP (idée Bellule)
+***************************************************************************************/
+void lecture(){
+   WiFiClient clientweb = server.available();  // Listen for incoming clients
+
+  if (clientweb) {                  // If a new client connects,
+    Serial.println("New Client.");  // print a message out in the serial port
+    String currentLine = "";        // make a String to hold incoming data from the client
+    currentTime = millis();
+    previousTime = currentTime;
+    while (clientweb.connected() && currentTime - previousTime <= timeoutTime) {  // loop while the client's connected
+      currentTime = millis();
+      if (clientweb.available()) {  // if there's bytes to read from the client,
+        char c = clientweb.read();     // read a byte, then
+        Serial.write(c);            // print it out the serial monitor
+        header += c;
+        if (c == '\n') {  // if the byte is a newline character
+          // if the current line is blank, you got two newline characters in a row.
+          // that's the end of the client HTTP request, so send a response:
+          if (currentLine.length() == 0) {
+            // HTTP headers always start with a response code (e.g. HTTP/1.1 200 OK)
+            // and a content-type so the client knows what's coming, then a blank line:
+            clientweb.println("HTTP/1.1 200 OK");
+            clientweb.println("Content-type:text/html");
+            clientweb.println("Connection: close");
+            clientweb.println();
+
+            clientweb.println("<meta http-equiv=\"refresh\" content=\"5\" />");
+            clientweb.println("<meta charset=\"UTF-8\" />");
+            // Display the HTML web page
+            clientweb.println("<!DOCTYPE html><html>");
+            clientweb.println("<link rel=\"stylesheet\" href=\"https://www.w3schools.com/w3css/4/w3.css\">");
+            clientweb.println("<link rel=\"stylesheet\" href=\"https://fonts.googleapis.com/css?family=Allerta+Stencil\">");
+
+            // Web Page Heading
+            //client.println("<div class=\"w3-container w3-center w3-xxxlarge\">");
+            clientweb.println("<div class= \"w3-container w3-black w3-center w3-allerta\">");
+            clientweb.println("<body><h1>MSunPV Companion</h1>");
+            clientweb.println("</div>");
+
+            clientweb.println("<div class=\"w3-card-4 w3-green w3-padding-16 w3-xxxlarge w3-center w3-xxxlarge \">");
+            clientweb.println("<p>Production Solaire"
+                           "</p>");
+            clientweb.println(PV);
+            clientweb.println("</div>");
+
+            clientweb.println("<div class=\"w3-card-4 w3-light-blue w3-padding-16 w3-xxxlarge w3-center\">");
+            clientweb.println("<p>Routage vers le ballon"
+                              "</p>");
+            clientweb.println(CU);
+            clientweb.println("</div>");
+
+            clientweb.println("<div class=\"w3-card-4 w3-pale-yellow w3-padding-16 w3-xxxlarge w3-center\">");
+            clientweb.println("<p>Consommation EDF"
+                              "</p>");
+            clientweb.println(CO);
+            clientweb.println("</div>");
+
+            clientweb.println("</div>");
+            clientweb.println("</body></html>");
+
+            // The HTTP response ends with another blank line
+            clientweb.println();
+            // Break out of the while loop
+            break;
+          } else {  // if you got a newline, then clear currentLine
+            currentLine = "";
+          }
+        } else if (c != '\r') {  // if you got anything else but a carriage return character,
+          currentLine += c;      // add it to the end of the currentLine
+        }
+      }
+    }
+    // Clear the header variable
+    header = "";
+    // Close the connection
+    clientweb.stop();
+    Serial.println("Client disconnected.");
+    Serial.println("");
+  }
 }
 
 /***************************************************************************************
