@@ -206,7 +206,7 @@ void setup(){
   // Tamisage écran dim 200 (va de 0 à 255)
   ledcWrite(ledChannel, dim);
 
-  if (ServeurWeb) server.begin();
+  server.begin();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -214,8 +214,88 @@ void setup(){
 /////////////////////////////////////////////////////////////////////////////////////// 
 void loop(){
 
-  // Affichage des valeurs sur une adresse IP
-  if (ServeurWeb) lecture;
+// Activation de la fonction serveur Web (idée et conception Bellule)
+// Ceci permet une lecture sur un téléphone par exemple mais aussi
+// à distance si l'adresse du companion est fixe. Commencez par
+// vous connecter sur l'adresse affichée sur l'écran d'accueil
+  WiFiClient clientweb = server.available();  // Listen for incoming clients
+
+  if (clientweb) {                  // If a new client connects,
+    Serial.println("New Client.");  // print a message out in the serial port
+    String currentLine = "";        // make a String to hold incoming data from the client
+    currentTime = millis();
+    previousTime = currentTime;
+    while (clientweb.connected() && currentTime - previousTime <= timeoutTime) {  // loop while the client's connected
+      currentTime = millis();
+      if (clientweb.available()) {  // if there's bytes to read from the client,
+        char c = clientweb.read();     // read a byte, then
+        Serial.write(c);            // print it out the serial monitor
+        header += c;
+        if (c == '\n') {  // if the byte is a newline character
+          // if the current line is blank, you got two newline characters in a row.
+          // that's the end of the client HTTP request, so send a response:
+          if (currentLine.length() == 0) {
+            // HTTP headers always start with a response code (e.g. HTTP/1.1 200 OK)
+            // and a content-type so the client knows what's coming, then a blank line:
+            clientweb.println("HTTP/1.1 200 OK");
+            clientweb.println("Content-type:text/html");
+            clientweb.println("Connection: close");
+            clientweb.println();
+
+            clientweb.println("<meta http-equiv=\"refresh\" content=\"5\" />");
+            clientweb.println("<meta charset=\"UTF-8\" />");
+            // Display the HTML web page
+            clientweb.println("<!DOCTYPE html><html>");
+            clientweb.println("<link rel=\"stylesheet\" href=\"https://www.w3schools.com/w3css/4/w3.css\">");
+            clientweb.println("<link rel=\"stylesheet\" href=\"https://fonts.googleapis.com/css?family=Allerta+Stencil\">");
+
+            // Web Page Heading
+            //client.println("<div class=\"w3-container w3-center w3-xxxlarge\">");
+            clientweb.println("<div class= \"w3-container w3-black w3-center w3-allerta\">");
+            clientweb.println("<body><h1>MSunPV Companion</h1>");
+            clientweb.println("</div>");
+
+            clientweb.println("<div class=\"w3-card-4 w3-green w3-padding-16 w3-xxxlarge w3-center w3-xxxlarge \">");
+            clientweb.println("<p>Production Solaire"
+                           "</p>");
+            clientweb.println(PV);
+            clientweb.println("</div>");
+
+            clientweb.println("<div class=\"w3-card-4 w3-light-blue w3-padding-16 w3-xxxlarge w3-center\">");
+            clientweb.println("<p>Routage vers le ballon"
+                              "</p>");
+            clientweb.println(CU);
+            clientweb.println("</div>");
+
+            clientweb.println("<div class=\"w3-card-4 w3-pale-yellow w3-padding-16 w3-xxxlarge w3-center\">");
+            clientweb.println("<p>Consommation EDF"
+                              "</p>");
+            clientweb.println(CO);
+            clientweb.println("</div>");
+
+            clientweb.println("</div>");
+            clientweb.println("</body></html>");
+
+            // The HTTP response ends with another blank line
+            clientweb.println();
+            // Break out of the while loop
+            break;
+          } else {  // if you got a newline, then clear currentLine
+            currentLine = "";
+          }
+        } else if (c != '\r') {  // if you got anything else but a carriage return character,
+          currentLine += c;      // add it to the end of the currentLine
+        }
+      }
+    }
+    // Clear the header variable
+    header = "";
+    // Close the connection
+    clientweb.stop();
+    Serial.println("Client disconnected.");
+    Serial.println("");
+  }
+
 
   // Teste si veille demandée
   if (veille) {
@@ -814,89 +894,6 @@ String strDate(time_t unixTime)
   localDate2 += month(local_time);
   if (localDate2 == "14") wink = true;
   return localDate;
-}
-
-/***************************************************************************************
-**  Fonction serveur Web - permet de lire les données d'une adresse IP (idée Bellule)
-***************************************************************************************/
-void lecture(){
-   WiFiClient clientweb = server.available();  // Listen for incoming clients
-
-  if (clientweb) {                  // If a new client connects,
-    Serial.println("New Client.");  // print a message out in the serial port
-    String currentLine = "";        // make a String to hold incoming data from the client
-    currentTime = millis();
-    previousTime = currentTime;
-    while (clientweb.connected() && currentTime - previousTime <= timeoutTime) {  // loop while the client's connected
-      currentTime = millis();
-      if (clientweb.available()) {  // if there's bytes to read from the client,
-        char c = clientweb.read();     // read a byte, then
-        Serial.write(c);            // print it out the serial monitor
-        header += c;
-        if (c == '\n') {  // if the byte is a newline character
-          // if the current line is blank, you got two newline characters in a row.
-          // that's the end of the client HTTP request, so send a response:
-          if (currentLine.length() == 0) {
-            // HTTP headers always start with a response code (e.g. HTTP/1.1 200 OK)
-            // and a content-type so the client knows what's coming, then a blank line:
-            clientweb.println("HTTP/1.1 200 OK");
-            clientweb.println("Content-type:text/html");
-            clientweb.println("Connection: close");
-            clientweb.println();
-
-            clientweb.println("<meta http-equiv=\"refresh\" content=\"5\" />");
-            clientweb.println("<meta charset=\"UTF-8\" />");
-            // Display the HTML web page
-            clientweb.println("<!DOCTYPE html><html>");
-            clientweb.println("<link rel=\"stylesheet\" href=\"https://www.w3schools.com/w3css/4/w3.css\">");
-            clientweb.println("<link rel=\"stylesheet\" href=\"https://fonts.googleapis.com/css?family=Allerta+Stencil\">");
-
-            // Web Page Heading
-            //client.println("<div class=\"w3-container w3-center w3-xxxlarge\">");
-            clientweb.println("<div class= \"w3-container w3-black w3-center w3-allerta\">");
-            clientweb.println("<body><h1>MSunPV Companion</h1>");
-            clientweb.println("</div>");
-
-            clientweb.println("<div class=\"w3-card-4 w3-green w3-padding-16 w3-xxxlarge w3-center w3-xxxlarge \">");
-            clientweb.println("<p>Production Solaire"
-                           "</p>");
-            clientweb.println(PV);
-            clientweb.println("</div>");
-
-            clientweb.println("<div class=\"w3-card-4 w3-light-blue w3-padding-16 w3-xxxlarge w3-center\">");
-            clientweb.println("<p>Routage vers le ballon"
-                              "</p>");
-            clientweb.println(CU);
-            clientweb.println("</div>");
-
-            clientweb.println("<div class=\"w3-card-4 w3-pale-yellow w3-padding-16 w3-xxxlarge w3-center\">");
-            clientweb.println("<p>Consommation EDF"
-                              "</p>");
-            clientweb.println(CO);
-            clientweb.println("</div>");
-
-            clientweb.println("</div>");
-            clientweb.println("</body></html>");
-
-            // The HTTP response ends with another blank line
-            clientweb.println();
-            // Break out of the while loop
-            break;
-          } else {  // if you got a newline, then clear currentLine
-            currentLine = "";
-          }
-        } else if (c != '\r') {  // if you got anything else but a carriage return character,
-          currentLine += c;      // add it to the end of the currentLine
-        }
-      }
-    }
-    // Clear the header variable
-    header = "";
-    // Close the connection
-    clientweb.stop();
-    Serial.println("Client disconnected.");
-    Serial.println("");
-  }
 }
 
 /***************************************************************************************
