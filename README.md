@@ -26,7 +26,7 @@ Cette version permer l'affichage de :
 * Fonction serveur web avec possibilité de lire les données depuis un navigateur
 
 
-![Screenshot](img/affiche.jpg) 
+![Screenshot](img/affiche.jpeg) 
 
 Le rafraichissement des données photovoltaiques se fait toutes les 15 secondes, celui de la météo toutes les 15 minutes.
 
