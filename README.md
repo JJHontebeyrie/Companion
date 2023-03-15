@@ -32,7 +32,7 @@ Le rafraichissement des données photovoltaiques se fait toutes les 15 secondes,
 
 Le bouton du T-Diplay situé en bas, si vous avez branché le module par la gauche affiche les cumuls de la consommation, de la production des panneaux, de la réinjection, et de la charge du cumulus.
 
-Le bouton haut permet de régler la luminosité de l'écran avec effet de va-et-vient et rendu graphique. La charge de la batterie éventuellement installée est visualisée également.
+Le bouton haut permet de régler la luminosité de l'écran avec effet de va-et-vient et rendu graphique. La charge de la batterie éventuellement installée est visualisée également. 
 En cas de problème, le bouton reset situé sur le haut du boitier permet de relancer le programme.
 
 **MSunPV**
