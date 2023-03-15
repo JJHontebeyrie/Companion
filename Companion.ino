@@ -124,7 +124,7 @@ unsigned long currentTime = millis();
 // Previous time
 unsigned long previousTime = 0; 
 // Define timeout time in milliseconds (example: 2000ms = 2s)
-const long timeoutTime = 2000;
+const long timeoutTime = 5000;
 
 ///////////////////////////////////////////////////////////////////////////////////////
 //                                 Routine SETUP                                     //
@@ -214,10 +214,11 @@ void setup(){
 /////////////////////////////////////////////////////////////////////////////////////// 
 void loop(){
 
-// Activation de la fonction serveur Web (idée et conception Bellule)
-// Ceci permet une lecture sur un téléphone par exemple mais aussi
-// à distance si l'adresse du companion est fixe. Commencez par
-// vous connecter sur l'adresse affichée sur l'écran d'accueil
+  // Activation de la fonction serveur Web (idée et conception Bellule)
+  // Ceci permet une lecture sur un téléphone par exemple mais aussi
+  // à distance si l'adresse du companion est fixe. Commencez par
+  // vous connecter sur l'adresse affichée sur l'écran d'accueil
+  //=================================================== SERVEUR WEB =====================================================
   WiFiClient clientweb = server.available();  // Listen for incoming clients
 
   if (clientweb) {                  // If a new client connects,
@@ -249,33 +250,27 @@ void loop(){
             clientweb.println("<link rel=\"stylesheet\" href=\"https://www.w3schools.com/w3css/4/w3.css\">");
             clientweb.println("<link rel=\"stylesheet\" href=\"https://fonts.googleapis.com/css?family=Allerta+Stencil\">");
 
-            // Web Page Heading
-            //client.println("<div class=\"w3-container w3-center w3-xxxlarge\">");
+            // Affichage des données MSunPV
             clientweb.println("<div class= \"w3-container w3-black w3-center w3-allerta\">");
             clientweb.println("<body><h1>MSunPV Companion</h1>");
             clientweb.println("</div>");
 
-            clientweb.println("<div class=\"w3-card-4 w3-green w3-padding-16 w3-xxxlarge w3-center w3-xxxlarge \">");
-            clientweb.println("<p>Production Solaire"
-                           "</p>");
-            clientweb.println(PV);
+            clientweb.println("<div class=\"w3-card-4 w3-green w3-padding-16 w3-xxxlarge w3-center\">");
+            clientweb.println("<p>Production Solaire</p>");
+            clientweb.print(PV);clientweb.println(" w");
             clientweb.println("</div>");
 
             clientweb.println("<div class=\"w3-card-4 w3-light-blue w3-padding-16 w3-xxxlarge w3-center\">");
-            clientweb.println("<p>Routage vers le ballon"
-                              "</p>");
-            clientweb.println(CU);
+            clientweb.println("<p>Routage vers le ballon</p>");
+            clientweb.print(CU);clientweb.println(" w");
             clientweb.println("</div>");
 
             clientweb.println("<div class=\"w3-card-4 w3-pale-yellow w3-padding-16 w3-xxxlarge w3-center\">");
-            clientweb.println("<p>Consommation EDF"
-                              "</p>");
-            clientweb.println(CO);
+            clientweb.println("<p>Consommation EDF</p>");
+            clientweb.print(CO);clientweb.println(" w");
             clientweb.println("</div>");
 
-            clientweb.println("</div>");
             clientweb.println("</body></html>");
-
             // The HTTP response ends with another blank line
             clientweb.println();
             // Break out of the while loop
@@ -295,7 +290,7 @@ void loop(){
     Serial.println("Client disconnected.");
     Serial.println("");
   }
-
+  //=================================================== SERVEUR WEB =====================================================
 
   // Teste si veille demandée
   if (veille) {
