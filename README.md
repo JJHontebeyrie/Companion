@@ -25,6 +25,9 @@ Cette version permer l'affichage de :
 * Divers voyants indiquant la mise en route d’un chauffage électrique ou le point de givre
 * Fonction serveur web avec possibilité de lire les données depuis un navigateur
 
+
+![Screenshot](img/affiche.jpg) 
+
 Le rafraichissement des données photovoltaiques se fait toutes les 15 secondes, celui de la météo toutes les 15 minutes.
 
 Le bouton du T-Diplay situé en bas, si vous avez branché le module par la gauche affiche les cumuls de la consommation, de la production des panneaux, de la réinjection, et de la charge du cumulus.
