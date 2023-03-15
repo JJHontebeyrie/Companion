@@ -172,6 +172,7 @@ void setup(){
 
   // Etablissement connexion wifi
   WiFi.mode(WIFI_STA);
+  WiFi.setScanMethod(WIFI_ALL_CHANNEL_SCAN);
   //*****************************************************************************
   // Si difficultés à se connecter >  wpa minimal (décommenter la ligne suivante)
   //WiFi.setMinSecurity(WIFI_AUTH_WPA_PSK);
@@ -265,6 +266,30 @@ void loop(){
             clientweb.println("<div class=\"w3-card-4 w3-pale-yellow w3-padding-16 w3-xxxlarge w3-center\">");
             clientweb.println("<p>Consommation EDF</p>");
             clientweb.print(CO);  // Valeur Consommation EDF
+            clientweb.println(" w");
+            clientweb.println("</div>");
+
+            clientweb.println("<div class=\"w3-card-4 w3-grey w3-padding-16 w3-xxxlarge w3-center\">");
+            clientweb.println("<p>Production Solaire (journée)</p>");
+            clientweb.print(CUMPV); // Cumul Panneaux Photovoltaiques
+            clientweb.println(" w");
+            clientweb.println("</div>");
+
+            clientweb.println("<div class=\"w3-card-4 w3-light-grey w3-padding-16 w3-xxxlarge w3-center\">");
+            clientweb.println("<p>Recharge Cumulus (journée)</p>");
+            clientweb.print(CUMBAL);  // Valeur cumul recharge cumulus
+            clientweb.println(" w");
+            clientweb.println("</div>");
+
+            clientweb.println("<div class=\"w3-card-4 w3-white w3-padding-16 w3-xxxlarge w3-center\">");
+            clientweb.println("<p>Consommation journalière</p>");
+            clientweb.print(CUMCO);  // Cumul Consommation EDF
+            clientweb.println(" w");
+            clientweb.println("</div>");
+
+            clientweb.println("<div class=\"w3-card-4 w3-pale-blue w3-padding-16 w3-xxxlarge w3-center\">");
+            clientweb.println("<p>Réinjection éventuelle</p>");
+            clientweb.print(CUMINJ);  // Cumul injection EDF
             clientweb.println(" w");
             clientweb.println("</div>");
              // <<<<<<<<<<<<<<<<<<<<<<<< Affichage des données MSunPV  >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -841,7 +866,7 @@ String strTime(time_t unixTime)
 }
 
 /***************************************************************************************
-**             Conversion Unix time to vers "local time" time string "12:34"
+**             Conversion Unix time vers "local time" time string "12:34"
 ***************************************************************************************/
 String strLocalTime(time_t unixTime)
 {
