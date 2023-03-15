@@ -113,16 +113,11 @@ bool booted = true;
 long lastDownloadUpdate = millis();
 String timeNow = "";
 
-// Set web server port number to 80
+// Variables pour serveur web
 WiFiServer server(80);
-
-// Variable to store the HTTP request
-String header;
-
-// Current time
-unsigned long currentTime = millis();
-// Previous time
-unsigned long previousTime = 0; 
+String header; // Variable to store the HTTP request
+unsigned long currentTime = millis(); // Current time
+unsigned long previousTime = 0; // Previous time
 // Define timeout time in milliseconds (example: 2000ms = 2s)
 const long timeoutTime = 5000;
 
@@ -249,26 +244,30 @@ void loop(){
             clientweb.println("<!DOCTYPE html><html>");
             clientweb.println("<link rel=\"stylesheet\" href=\"https://www.w3schools.com/w3css/4/w3.css\">");
             clientweb.println("<link rel=\"stylesheet\" href=\"https://fonts.googleapis.com/css?family=Allerta+Stencil\">");
-
-            // Affichage des données MSunPV
+           
             clientweb.println("<div class= \"w3-container w3-black w3-center w3-allerta\">");
             clientweb.println("<body><h1>MSunPV Companion</h1>");
             clientweb.println("</div>");
 
+             // <<<<<<<<<<<<<<<<<<<<<<<< Affichage des données MSunPV  >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
             clientweb.println("<div class=\"w3-card-4 w3-green w3-padding-16 w3-xxxlarge w3-center\">");
             clientweb.println("<p>Production Solaire</p>");
-            clientweb.print(PV);clientweb.println(" w");
+            clientweb.print(PV); // Valeur Panneaux Photovoltaiques
+            clientweb.println(" w");
             clientweb.println("</div>");
 
             clientweb.println("<div class=\"w3-card-4 w3-light-blue w3-padding-16 w3-xxxlarge w3-center\">");
             clientweb.println("<p>Routage vers le ballon</p>");
-            clientweb.print(CU);clientweb.println(" w");
+            clientweb.print(CU);  // Valeur Recharge Cumulus
+            clientweb.println(" w");
             clientweb.println("</div>");
 
             clientweb.println("<div class=\"w3-card-4 w3-pale-yellow w3-padding-16 w3-xxxlarge w3-center\">");
             clientweb.println("<p>Consommation EDF</p>");
-            clientweb.print(CO);clientweb.println(" w");
+            clientweb.print(CO);  // Valeur Consommation EDF
+            clientweb.println(" w");
             clientweb.println("</div>");
+             // <<<<<<<<<<<<<<<<<<<<<<<< Affichage des données MSunPV  >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
             clientweb.println("</body></html>");
             // The HTTP response ends with another blank line
