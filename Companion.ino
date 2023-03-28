@@ -1,6 +1,6 @@
 /**************************************************
 **                  COMPANION                    **
-**                Version 2.30                   **
+**                Version 2.31                   **
 **                @jjhontebeyrie                 **
 ***************************************************
 **               Affichage déporté               **
@@ -763,8 +763,8 @@ void donneesmeteo(){
   Serial.print("icone               : "); Serial.println(forecast->icon[0]);
   Serial.print("ID                  : "); Serial.println(forecast->id[0]);
 
-  lever = strLocalTime(forecast->sunrise);
-  coucher = strLocalTime(forecast->sunset);
+  lever = strTime(forecast->sunrise);
+  coucher = strTime(forecast->sunset);
   date = strDate(forecast->dt[0]);
   tempExt = String(forecast->temp[0], 0);  // Température sans décimale
   if (tempExt.length() < 2) tempExt = " " + tempExt; //et sur 2 caractères
