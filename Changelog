@@ -1,3 +1,7 @@
+28/03/2023
+Version 2.31
+Correction d'un bug, l'affichage des horaires lever et coucher de soleil ne tenait pas compte du décalage heure été/hiver
+
 14/03/2023
 Version 2.30
 Ajout de la fonction serveur web (conception et idée de Bellule)
