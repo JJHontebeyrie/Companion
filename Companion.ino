@@ -1,6 +1,6 @@
 /**************************************************
 **                  COMPANION                    **
-**                Version 2.31                   **
+**                Version 2.32                   **
 **                @jjhontebeyrie                 **
 ***************************************************
 **               Affichage déporté               **
@@ -96,6 +96,8 @@ String CUMCO,CUMINJ,CUMPV,CUMBAL; // Cumuls. Il y a 8 valeurs, on en récupère 
 // Wifi
 int status = WL_IDLE_STATUS;
 WiFiClient client;
+unsigned long previousMillis = 0;
+unsigned long interval = 30000;
 
 // Chaines pour decryptage
 String matchString = "";
@@ -318,7 +320,7 @@ void loop(){
 
   // Teste si veille demandée
   if (veille) {
-    if (PV.toInt() == 0) dim = 50; // on met l'écran en faible luminosité si pv = 0 
+    if (PV.toInt() == 0) dim = 0; // on met l'écran en arrêt si pv = 0 
     ledcWrite(ledChannel, dim);
   }
 
@@ -360,6 +362,16 @@ void loop(){
 
   // Modification intensité lumineuse sous forme va  & vient
   if (digitalRead(0) == 0) Eclairage();
+
+  unsigned long currentMillis = millis();
+  // if WiFi is down, try reconnecting
+  if ((WiFi.status() != WL_CONNECTED) && (currentMillis - previousMillis >=interval)) {
+  Serial.print(millis());
+  Serial.println("Reconnecting to WiFi...");
+  WiFi.disconnect();
+  WiFi.reconnect();
+  previousMillis = currentMillis;
+  }
 
   booted = false;
 } 
@@ -669,7 +681,9 @@ void Eclairage(){
     if (dim >= 250) {dim = 250; inverse = false;}
   }
   delay(300);
-  veille = false; // Si on clique bouton, veille annulée
+  if (veille == true) { // Si on clique bouton, veille annulée
+    veille = false;
+    dim = 50; }
   Barlight();
 }
 
@@ -809,22 +823,6 @@ void resetCycle() {
  awaitingArrivals = true;
  arrivalsRequested = false;
  Serial.println("et montre l'écran...");    
-}
-
-/***************************************************************************************
-**                          Reconnexion wifi en cas de perte
-***************************************************************************************/
-void WiFiStationDisconnected(WiFiEvent_t event, WiFiEventInfo_t info){
-  Serial.println("Disconnected from WiFi access point");
-  Serial.print("WiFi lost connection. Reason: ");
-  depart.setTextColor(TFT_RED,TFT_WHITE);
-  depart.setTextDatum(4);
-  depart.drawString("   CONNEXION PERTURBEE   ",160,118,2);
-  depart.drawString("    VEUILLEZ PATIENTER...    ",160,133,2);
-  depart.pushSprite(10,20);
-  Serial.println(info.wifi_sta_disconnected.reason);
-  Serial.println("Trying to Reconnect");
-  WiFi.begin(ssid, password);
 }
 
 /***************************************************************************************
