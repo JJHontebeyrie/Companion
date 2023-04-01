@@ -1,6 +1,6 @@
 /**************************************************
 **                  COMPANION                    **
-**                Version 2.32                   **
+**                Version 2.33                   **
 **                @jjhontebeyrie                 **
 ***************************************************
 **               Affichage déporté               **
@@ -27,8 +27,8 @@
 ***************************************************
 ** Les valeurs correspondantes à vos branchements**
 ** et sondes sont à modifier éventuellement      **
-** aux lignes 434 et suivantes pour les index    **
-** et 481 et suivantes pour les cumuls           **
+** aux lignes 559 et suivantes pour les index    **
+** et 606 et suivantes pour les cumuls           **
 **************************************************/
 
 #include <TFT_eSPI.h>
@@ -72,6 +72,7 @@ long lastTime = 0;
 long lastMSunPV = 0;
 String Months[13]={"Mois","Jan","Fev","Mars","Avril","Mai","Juin","Juill","Aout","Sept","Oct","Nov","Dec"};
 String IP;  // Adresse IP de connexion du Companion
+String RSSI; // Puissance signal WiFi
 uint32_t volt ; // Voltage batterie
 int vertical = 15;
 bool wink = false;
@@ -96,8 +97,6 @@ String CUMCO,CUMINJ,CUMPV,CUMBAL; // Cumuls. Il y a 8 valeurs, on en récupère 
 // Wifi
 int status = WL_IDLE_STATUS;
 WiFiClient client;
-unsigned long previousMillis = 0;
-unsigned long interval = 30000;
 
 // Chaines pour decryptage
 String matchString = "";
@@ -186,7 +185,7 @@ void setup(){
     }
   Serial.println("WiFi connected.");
   IP=WiFi.localIP().toString();
-
+  RSSI = String(WiFi.RSSI());
   // Récupération de l'heure
   udp.begin(localPort);
   syncTime();
@@ -198,8 +197,8 @@ void setup(){
   // Affichage texte sur écran de départ
   depart.setTextColor(TFT_RED,TFT_WHITE);
   depart.setTextDatum(4);
-  depart.drawString("CONNEXION OK (" + (IP) + ")",150,126,2);
-  depart.pushSprite(10,20);
+  depart.drawString("CONNEXION OK (" + (IP) + ") " + (RSSI) + "dB",150,126,2);
+  depart.pushSprite(10,20); 
 
   // Tamisage écran dim 200 (va de 0 à 255)
   ledcWrite(ledChannel, dim);
@@ -363,14 +362,10 @@ void loop(){
   // Modification intensité lumineuse sous forme va  & vient
   if (digitalRead(0) == 0) Eclairage();
 
-  unsigned long currentMillis = millis();
-  // if WiFi is down, try reconnecting
-  if ((WiFi.status() != WL_CONNECTED) && (currentMillis - previousMillis >=interval)) {
-  Serial.print(millis());
-  Serial.println("Reconnecting to WiFi...");
-  WiFi.disconnect();
-  WiFi.reconnect();
-  previousMillis = currentMillis;
+  // Reconnexion en cas de perte (idée de Felvic)
+  if (WiFi.status() != WL_CONNECTED)  {
+  Serial.println("Reconnection au WiFi...");
+  setup();
   }
 
   booted = false;
