@@ -1,6 +1,6 @@
 /**************************************************
 **                  COMPANION                    **
-**                Version 2.33                   **
+**                Version 2.34                   **
 **                @jjhontebeyrie                 **
 ***************************************************
 **               Affichage déporté               **
@@ -211,111 +211,8 @@ void setup(){
 /////////////////////////////////////////////////////////////////////////////////////// 
 void loop(){
 
-  // Activation de la fonction serveur Web (idée et conception Bellule)
-  // Ceci permet une lecture sur un téléphone par exemple mais aussi
-  // à distance si l'adresse du companion est fixe. Commencez par
-  // vous connecter sur l'adresse affichée sur l'écran d'accueil
-  //=================================================== SERVEUR WEB =====================================================
-  WiFiClient clientweb = server.available();  // Listen for incoming clients
-
-  if (clientweb) {                  // If a new client connects,
-    Serial.println("New Client.");  // print a message out in the serial port
-    String currentLine = "";        // make a String to hold incoming data from the client
-    currentTime = millis();
-    previousTime = currentTime;
-    while (clientweb.connected() && currentTime - previousTime <= timeoutTime) {  // loop while the client's connected
-      currentTime = millis();
-      if (clientweb.available()) {  // if there's bytes to read from the client,
-        char c = clientweb.read();     // read a byte, then
-        Serial.write(c);            // print it out the serial monitor
-        header += c;
-        if (c == '\n') {  // if the byte is a newline character
-          // if the current line is blank, you got two newline characters in a row.
-          // that's the end of the client HTTP request, so send a response:
-          if (currentLine.length() == 0) {
-            // HTTP headers always start with a response code (e.g. HTTP/1.1 200 OK)
-            // and a content-type so the client knows what's coming, then a blank line:
-            clientweb.println("HTTP/1.1 200 OK");
-            clientweb.println("Content-type:text/html");
-            clientweb.println("Connection: close");
-            clientweb.println();
-
-            clientweb.println("<meta http-equiv=\"refresh\" content=\"5\" />");
-            clientweb.println("<meta charset=\"UTF-8\" />");
-            // Display the HTML web page
-            clientweb.println("<!DOCTYPE html><html>");
-            clientweb.println("<link rel=\"stylesheet\" href=\"https://www.w3schools.com/w3css/4/w3.css\">");
-            clientweb.println("<link rel=\"stylesheet\" href=\"https://fonts.googleapis.com/css?family=Allerta+Stencil\">");
-           
-            clientweb.println("<div class= \"w3-container w3-black w3-center w3-allerta\">");
-            clientweb.println("<body><h1>MSunPV Companion</h1>");
-            clientweb.println("</div>");
-
-             // <<<<<<<<<<<<<<<<<<<<<<<< Affichage des données MSunPV  >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-            clientweb.println("<div class=\"w3-card-4 w3-green w3-padding-16 w3-xxxlarge w3-center\">");
-            clientweb.println("<p>Production Solaire</p>");
-            clientweb.print(PV); // Valeur Panneaux Photovoltaiques
-            clientweb.println(" w");
-            clientweb.println("</div>");
-
-            clientweb.println("<div class=\"w3-card-4 w3-light-blue w3-padding-16 w3-xxxlarge w3-center\">");
-            clientweb.println("<p>Routage vers le ballon</p>");
-            clientweb.print(CU);  // Valeur Recharge Cumulus
-            clientweb.println(" w");
-            clientweb.println("</div>");
-
-            clientweb.println("<div class=\"w3-card-4 w3-pale-yellow w3-padding-16 w3-xxxlarge w3-center\">");
-            clientweb.println("<p>Consommation EDF</p>");
-            clientweb.print(CO);  // Valeur Consommation EDF
-            clientweb.println(" w");
-            clientweb.println("</div>");
-
-            clientweb.println("<div class=\"w3-card-4 w3-grey w3-padding-16 w3-xxxlarge w3-center\">");
-            clientweb.println("<p>Production Solaire (journée)</p>");
-            clientweb.print(CUMPV); // Cumul Panneaux Photovoltaiques
-            clientweb.println(" w");
-            clientweb.println("</div>");
-
-            clientweb.println("<div class=\"w3-card-4 w3-light-grey w3-padding-16 w3-xxxlarge w3-center\">");
-            clientweb.println("<p>Recharge Cumulus (journée)</p>");
-            clientweb.print(CUMBAL);  // Valeur cumul recharge cumulus
-            clientweb.println(" w");
-            clientweb.println("</div>");
-
-            clientweb.println("<div class=\"w3-card-4 w3-white w3-padding-16 w3-xxxlarge w3-center\">");
-            clientweb.println("<p>Consommation journalière</p>");
-            clientweb.print(CUMCO);  // Cumul Consommation EDF
-            clientweb.println(" w");
-            clientweb.println("</div>");
-
-            clientweb.println("<div class=\"w3-card-4 w3-pale-blue w3-padding-16 w3-xxxlarge w3-center\">");
-            clientweb.println("<p>Réinjection éventuelle</p>");
-            clientweb.print(CUMINJ);  // Cumul injection EDF
-            clientweb.println(" w");
-            clientweb.println("</div>");
-             // <<<<<<<<<<<<<<<<<<<<<<<< Affichage des données MSunPV  >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
-            clientweb.println("</body></html>");
-            // The HTTP response ends with another blank line
-            clientweb.println();
-            // Break out of the while loop
-            break;
-          } else {  // if you got a newline, then clear currentLine
-            currentLine = "";
-          }
-        } else if (c != '\r') {  // if you got anything else but a carriage return character,
-          currentLine += c;      // add it to the end of the currentLine
-        }
-      }
-    }
-    // Clear the header variable
-    header = "";
-    // Close the connection
-    clientweb.stop();
-    Serial.println("Client disconnected.");
-    Serial.println("");
-  }
-  //=================================================== SERVEUR WEB =====================================================
+  // Teste si demande lecture web
+  serveurweb();
 
   // Teste si veille demandée
   if (veille) {
@@ -370,6 +267,134 @@ void loop(){
 
   booted = false;
 } 
+
+/***************************************************************************************
+**                      Serveur web (idée et conception Bellule)
+***************************************************************************************/
+void serveurweb() {
+  // Activation de la fonction serveur Web (superbe idée de Bellule)
+  // Ceci permet une lecture sur un téléphone par exemple mais aussi
+  // à distance si l'adresse du companion est fixe. Commencez par
+  // vous connecter sur l'adresse affichée sur l'écran d'accueil
+  WiFiClient clientweb = server.available();  // Ecoute si un client web se connecte
+  if (clientweb) {
+    Serial.println("New Client.");  // print a message out in the serial port
+    String currentLine = "";        // make a String to hold incoming data from the client
+    currentTime = millis();
+    previousTime = currentTime;
+    while (clientweb.connected() && currentTime - previousTime <= timeoutTime) {  // loop while the client's connected
+      currentTime = millis();
+      if (clientweb.available()) {  // if there's bytes to read from the client,
+        char c = clientweb.read();  // read a byte, then
+        Serial.write(c);            // print it out the serial monitor
+        header += c;
+        if (c == '\n') {  // if the byte is a newline character
+          // if the current line is blank, you got two newline characters in a row.
+          // that's the end of the client HTTP request, so send a response:
+          if (currentLine.length() == 0) {
+            // HTTP headers always start with a response code (e.g. HTTP/1.1 200 OK)
+            // and a content-type so the client knows what's coming, then a blank line:
+            clientweb.println("HTTP/1.1 200 OK");
+            clientweb.println("Content-type:text/html");
+            clientweb.println("Connection: close");
+            clientweb.println();
+
+            clientweb.println("<!DOCTYPE html><html>");
+            clientweb.println("<html lang=\"fr\">");
+            clientweb.println("<head>");
+            clientweb.println("<meta charset=\"UTF-8\" />");
+            clientweb.println("<title>MSunPV Companion</title>");
+            clientweb.println("<link rel=\"stylesheet\" href=\"https://www.w3schools.com/w3css/4/w3.css\">");
+            clientweb.println("<link rel=\"stylesheet\" href=\"https://fonts.googleapis.com/css?family=Allerta+Stencil\">");
+            clientweb.println("<script src=\"https://code.jquery.com/jquery-3.6.4.js\" integrity=\"sha256-a9jBBRygX1Bh5lt8GZjXDzyOB+bWve9EiO7tROUtj/E=\" crossorigin=\"anonymous\"></script>");
+
+            clientweb.println("<script>");
+            clientweb.println("$( document ).ready(function() {");
+            clientweb.println("$('#div_refresh').load(document.URL +  ' #div_refresh');");
+            clientweb.println("setInterval(function() {");
+            clientweb.println("$('#div_refresh').load(document.URL +  ' #div_refresh');");
+            clientweb.println("},5000);");
+            clientweb.println("});");
+            clientweb.println("</script>");
+
+            clientweb.println("</head>");
+            clientweb.println("<body>");
+
+            // Web Page Heading
+            clientweb.println("<div class= \"w3-container w3-black w3-center w3-allerta\">");
+            clientweb.println("<body><h1>MSunPV Companion</h1>");
+            clientweb.println("</div>");
+
+            // <<<<<<<<<<<<<<<<<<<<<<<< Affichage des données MSunPV  >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+            // <<    Vous pouvez personnaliser les données qui sont affichées sur le serveur web      >>
+            //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+            clientweb.println("<div id=\"div_refresh\">");
+            clientweb.println("<div class=\"w3-card-4 w3-green w3-padding-16 w3-xxxlarge w3-center\">");
+            clientweb.println("<p>Production Solaire</p>"); // (personnalisaion possible, changez le titre)
+            clientweb.print(PV); // Valeur Panneaux Photovoltaiques (personnalisaion possible)
+            clientweb.println(" w");
+            clientweb.println("</div>");
+
+            clientweb.println("<div class=\"w3-card-4 w3-light-blue w3-padding-16 w3-xxxlarge w3-center\">");
+            clientweb.println("<p>Routage vers le ballon</p>"); // (personnalisaion possible, changez le titre)
+            clientweb.print(CU);  // Valeur Recharge Cumulus (personnalisaion possible)
+            clientweb.println(" w");
+            clientweb.println("</div>");
+
+            clientweb.println("<div class=\"w3-card-4 w3-pale-yellow w3-padding-16 w3-xxxlarge w3-center\">");
+            clientweb.println("<p>Consommation EDF</p>"); // (personnalisaion possible, changez le titre)
+            clientweb.print(CO);  // Valeur Consommation EDF (personnalisaion possible)
+            clientweb.println(" w");
+            clientweb.println("</div>");
+
+            clientweb.println("<div class=\"w3-card-4 w3-grey w3-padding-16 w3-xxxlarge w3-center\">");
+            clientweb.println("<p>Production Solaire (journée)</p>"); // (personnalisaion possible, changez le titre)
+            clientweb.print(CUMPV); // Cumul Panneaux Photovoltaiques (personnalisaion possible)
+            clientweb.println(" w");
+            clientweb.println("</div>");
+
+            clientweb.println("<div class=\"w3-card-4 w3-light-grey w3-padding-16 w3-xxxlarge w3-center\">");
+            clientweb.println("<p>Recharge Cumulus (journée)</p>"); // (personnalisaion possible, changez le titre)
+            clientweb.print(CUMBAL);  // Valeur cumul recharge cumulus (personnalisaion possible)
+            clientweb.println(" w");
+            clientweb.println("</div>");
+
+            clientweb.println("<div class=\"w3-card-4 w3-white w3-padding-16 w3-xxxlarge w3-center\">");
+            clientweb.println("<p>Consommation journalière</p>"); // (personnalisaion possible, changez le titre)
+            clientweb.print(CUMCO);  // Cumul Consommation EDF (personnalisaion possible)
+            clientweb.println(" w");
+            clientweb.println("</div>");
+
+            clientweb.println("<div class=\"w3-card-4 w3-pale-blue w3-padding-16 w3-xxxlarge w3-center\">");
+            clientweb.println("<p>Réinjection éventuelle</p>"); // (personnalisaion possible, changez le titre)
+            clientweb.print(CUMINJ);  // Cumul injection EDF (personnalisaion possible)
+            clientweb.println(" w");
+            clientweb.println("</div>");
+            // <<<<<<<<<<<<<<<<<<<<<<< Fin Affichage des données MSunPV  >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+            //Finalisation page web
+            clientweb.println("</div>");
+            clientweb.println("</body></html>");
+            // The HTTP response ends with another blank line
+            clientweb.println();
+            // Break out of the while loop
+            break;
+          } else {  // if you got a newline, then clear currentLine
+              currentLine = "";
+            }
+          } else if (c != '\r') {  // if you got anything else but a carriage return character,
+            currentLine += c;      // add it to the end of the currentLine
+          }
+        }
+      }
+    // Clear the header variable
+    header = "";
+    // Close the connection
+    clientweb.stop();
+    Serial.println("Client disconnected.");
+    Serial.println("");
+  }
+}
 
 /***************************************************************************************
 **                             Affichage principal
@@ -779,7 +804,7 @@ void donneesmeteo(){
   if (tempExt.length() < 2) tempExt = " " + tempExt; //et sur 2 caractères
   icone = (forecast->icon[0]);
   ID  = (forecast->id[0]);
-  if (wink) icone ="80d";
+  if (poisson) {if (wink) icone ="80d";}
 
   // Effacement des chaines pour libérer la mémoire
   delete forecast;
@@ -904,7 +929,7 @@ String strDate(time_t unixTime)
   localDate += " ";
   localDate += String(Months[month(local_time)]);
   localDate2 += month(local_time);
-  if (localDate2 == "14") wink = true;
+  if (poisson) {if (localDate2 == "14") wink = true;}
   return localDate;
 }
 
