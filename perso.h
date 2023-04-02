@@ -41,7 +41,7 @@ bool lipo = false;
 bool chauffageElectr = true;
 
 // Affichage de température si vous avez installé une sonde sur le cumulus
-// Mettez alors à true et vérifiez ligne 437 dans companion.ino
+// Mettez alors à true et vérifiez ligne 567 dans companion.ino
 bool sonde = false;
 
 // Mise en veille affichage écran quand PV=0 (idée de Defaliz)
@@ -56,6 +56,10 @@ String longitude = "-0.594"; // 180.000 to -180.000 negative for West
 String api_key = "**************************";
 String units = "metric";  // ou "imperial"
 String language = "fr";
+
+// Clin d'oeil pour le 1er Avril
+// Fait apparaitre un poisson à la place de l'icone météo ce jour là
+bool poisson = false;
 
 //*****************************************************************************
 //*******************    Fin des données personnelles    **********************
