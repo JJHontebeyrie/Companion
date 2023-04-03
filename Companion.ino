@@ -1,6 +1,6 @@
 /**************************************************
 **                  COMPANION                    **
-**                Version 2.34                   **
+**                Version 2.36                   **
 **                @jjhontebeyrie                 **
 ***************************************************
 **               Affichage déporté               **
@@ -36,6 +36,7 @@
 #include <JSON_Decoder.h> // https://github.com/Bodmer/JSON_Decoder
 #include <OpenWeather.h>  // Latest here: https://github.com/Bodmer/OpenWeather
 #include "NTP_Time.h"     // Attached to this sketch, see that tab for library needs
+#include <OneButton.h>    // OneButton par Matthias Hertel (dans le gestionnaire de bibliothèque)
 #include "perso.h"
 #include "logo.h"
 #include "images.h"
@@ -65,7 +66,7 @@ TFT_eSprite meteo = TFT_eSprite(&lcd);    // Sprite meteo
 #define color8 0x16DA // Température cumulus
 
 // Chemin acces au fichier de données MSunPV
-char path[]   = "/status.xml";
+char path[] = "/status.xml";
 
 // Variables pour programme
 long lastTime = 0;
@@ -76,6 +77,8 @@ String RSSI; // Puissance signal WiFi
 uint32_t volt ; // Voltage batterie
 int vertical = 15;
 bool wink = false;
+#define PIN_INPUT 0
+OneButton button(PIN_INPUT, true);
 
 // Pointeurs pour relance recherche valeurs
 bool awaitingArrivals = true;
@@ -130,7 +133,6 @@ void setup(){
   if (lipo) {pinMode(15,OUTPUT); digitalWrite(15,1);}
 
   //Initialisation des 2 boutons
-  pinMode(0, INPUT_PULLUP);
   pinMode(14, INPUT_PULLUP);
   // Initialisation ecran   
   lcd.init();
@@ -198,11 +200,18 @@ void setup(){
   depart.setTextColor(TFT_RED,TFT_WHITE);
   depart.setTextDatum(4);
   depart.drawString("CONNEXION OK (" + (IP) + ") " + (RSSI) + "dB",150,126,2);
-  depart.pushSprite(10,20); 
-
+  depart.pushSprite(10,20);
   // Tamisage écran dim 200 (va de 0 à 255)
   ledcWrite(ledChannel, dim);
-
+  if (veille){
+    delay(5000);
+    depart.drawString("             MISE EN VEILLE              ",150,126,2);
+    depart.pushSprite(10,20);
+    delay(2000); 
+  }
+  // link the doubleclick function to be called on a doubleclick event.
+  button.attachClick(handleClick);
+  button.attachDoubleClick(doubleClick);
   server.begin();
 }
 
@@ -213,12 +222,6 @@ void loop(){
 
   // Teste si demande lecture web
   serveurweb();
-
-  // Teste si veille demandée
-  if (veille) {
-    if (PV.toInt() == 0) dim = 0; // on met l'écran en arrêt si pv = 0 
-    ledcWrite(ledChannel, dim);
-  }
 
   // Etat batterie
   volt = (analogRead(4) * 2 * 3.3 * 1000) / 4096;
@@ -253,17 +256,22 @@ void loop(){
     lastMSunPV = millis();
   }
 
+ // Teste si veille demandée
+  if (veille) {
+    if (PV.toInt() <= 0){ 
+      dim = 0; // on met l'écran en arrêt si pv = 0 
+      ledcWrite(ledChannel, dim);}
+  }
+
   // Si bouton pressé, affiche cumuls momentanément
   if (digitalRead(14) == 0) AfficheCumul();
 
   // Modification intensité lumineuse sous forme va  & vient
-  if (digitalRead(0) == 0) Eclairage();
-
+  // et gestion double clic (by Felvic encore !)                   
+  button.tick();
+  
   // Reconnexion en cas de perte (idée de Felvic)
-  if (WiFi.status() != WL_CONNECTED)  {
-  Serial.println("Reconnection au WiFi...");
-  setup();
-  }
+  if (WiFi.status() != WL_CONNECTED) ESP.restart();
 
   booted = false;
 } 
@@ -330,44 +338,44 @@ void serveurweb() {
             //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
             clientweb.println("<div id=\"div_refresh\">");
             clientweb.println("<div class=\"w3-card-4 w3-green w3-padding-16 w3-xxxlarge w3-center\">");
-            clientweb.println("<p>Production Solaire</p>"); // (personnalisaion possible, changez le titre)
-            clientweb.print(PV); // Valeur Panneaux Photovoltaiques (personnalisaion possible)
+            clientweb.println("<p>Production Solaire</p>"); // (personnalisation possible, changez le titre)
+            clientweb.print(PV); // Valeur Panneaux Photovoltaiques (personnalisation possible)
             clientweb.println(" w");
             clientweb.println("</div>");
 
             clientweb.println("<div class=\"w3-card-4 w3-light-blue w3-padding-16 w3-xxxlarge w3-center\">");
-            clientweb.println("<p>Routage vers le ballon</p>"); // (personnalisaion possible, changez le titre)
-            clientweb.print(CU);  // Valeur Recharge Cumulus (personnalisaion possible)
+            clientweb.println("<p>Routage vers le ballon</p>"); // (personnalisation possible, changez le titre)
+            clientweb.print(CU);  // Valeur Recharge Cumulus (personnalisation possible)
             clientweb.println(" w");
             clientweb.println("</div>");
 
             clientweb.println("<div class=\"w3-card-4 w3-pale-yellow w3-padding-16 w3-xxxlarge w3-center\">");
-            clientweb.println("<p>Consommation EDF</p>"); // (personnalisaion possible, changez le titre)
-            clientweb.print(CO);  // Valeur Consommation EDF (personnalisaion possible)
+            clientweb.println("<p>Consommation EDF</p>"); // (personnalisation possible, changez le titre)
+            clientweb.print(CO);  // Valeur Consommation EDF (personnalisation possible)
             clientweb.println(" w");
             clientweb.println("</div>");
 
             clientweb.println("<div class=\"w3-card-4 w3-grey w3-padding-16 w3-xxxlarge w3-center\">");
-            clientweb.println("<p>Production Solaire (journée)</p>"); // (personnalisaion possible, changez le titre)
-            clientweb.print(CUMPV); // Cumul Panneaux Photovoltaiques (personnalisaion possible)
+            clientweb.println("<p>Production Solaire (journée)</p>"); // (personnalisation possible, changez le titre)
+            clientweb.print(CUMPV); // Cumul Panneaux Photovoltaiques (personnalisation possible)
             clientweb.println(" w");
             clientweb.println("</div>");
 
             clientweb.println("<div class=\"w3-card-4 w3-light-grey w3-padding-16 w3-xxxlarge w3-center\">");
-            clientweb.println("<p>Recharge Cumulus (journée)</p>"); // (personnalisaion possible, changez le titre)
-            clientweb.print(CUMBAL);  // Valeur cumul recharge cumulus (personnalisaion possible)
+            clientweb.println("<p>Recharge Cumulus (journée)</p>"); // (personnalisation possible, changez le titre)
+            clientweb.print(CUMBAL);  // Valeur cumul recharge cumulus (personnalisation possible)
             clientweb.println(" w");
             clientweb.println("</div>");
 
             clientweb.println("<div class=\"w3-card-4 w3-white w3-padding-16 w3-xxxlarge w3-center\">");
-            clientweb.println("<p>Consommation journalière</p>"); // (personnalisaion possible, changez le titre)
-            clientweb.print(CUMCO);  // Cumul Consommation EDF (personnalisaion possible)
+            clientweb.println("<p>Consommation journalière</p>"); // (personnalisation possible, changez le titre)
+            clientweb.print(CUMCO);  // Cumul Consommation EDF (personnalisation possible)
             clientweb.println(" w");
             clientweb.println("</div>");
 
             clientweb.println("<div class=\"w3-card-4 w3-pale-blue w3-padding-16 w3-xxxlarge w3-center\">");
-            clientweb.println("<p>Réinjection éventuelle</p>"); // (personnalisaion possible, changez le titre)
-            clientweb.print(CUMINJ);  // Cumul injection EDF (personnalisaion possible)
+            clientweb.println("<p>Réinjection éventuelle</p>"); // (personnalisation possible, changez le titre)
+            clientweb.print(CUMINJ);  // Cumul injection EDF (personnalisation possible)
             clientweb.println(" w");
             clientweb.println("</div>");
             // <<<<<<<<<<<<<<<<<<<<<<< Fin Affichage des données MSunPV  >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -464,13 +472,13 @@ void Affiche(){
     sprite.setTextDatum(4); // retour au centre milieu
     sprite.drawCircle(25,84,20,color1);
     sprite.drawCircle(25,84,19,color1);
-    if (TEMPCU.toInt() > 30) {
+    if (TEMPCU.toInt() >= 30) {
       sprite.drawCircle(25,84,20,color8);
       sprite.drawCircle(25,84,19,color8);}
-    if (TEMPCU.toInt() > 50) {
+    if (TEMPCU.toInt() >= 50) {
       sprite.drawCircle(25,84,20,color4);
       sprite.drawCircle(25,84,19,color4);}
-    if (TEMPCU.toInt() > 60) {
+    if (TEMPCU.toInt() >= 60) {
       sprite.drawCircle(25,84,20,color5);
       sprite.drawCircle(25,84,19,color5);}
   } 
@@ -634,7 +642,7 @@ void decrypte(){
   CUMBAL = MsgSplit2[3];  // Cumul Ballon cumulus
   //*************************************************************************************
   
-  // Affichage en entiers si demandé dans perso.h
+  // Affichage en entiers si demandé dans perso.h (par etienneroussel)
   if (nbrentier) {
     CUMCO = String(CUMCO.toInt()); 
     CUMINJ = String(CUMINJ.toInt()); 
@@ -701,9 +709,6 @@ void Eclairage(){
     if (dim >= 250) {dim = 250; inverse = false;}
   }
   delay(300);
-  if (veille == true) { // Si on clique bouton, veille annulée
-    veille = false;
-    dim = 50; }
   Barlight();
 }
 
@@ -946,4 +951,22 @@ void test(){
   sonde = true;
   chauffageElectr = true;
   veille = false;
+}
+
+/***************************************************************************************
+**                               Gestion bouton éclairage
+***************************************************************************************/
+// Simple clic
+void handleClick() {
+  if ((veille) and (PV.toInt() <= 0)) { // Si on clique bouton, veille annulée momentanément
+    dim = 100;
+    Barlight(); 
+    delay(5000);} // affichage de 5 secondes
+  Eclairage();  
+}
+
+// Double clic
+void doubleClick() {
+  if (veille) {veille = false; dim = 100;}
+  Eclairage();
 }
