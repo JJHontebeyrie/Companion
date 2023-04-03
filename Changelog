@@ -1,3 +1,9 @@
+03/04/2023
+Version 2.36
+Nécessite l'installation de la bibliothèque OneButton
+En mode veille, l'appui sur éclairage affiche les données pendant 5 sec.
+Un double clic annule le mode veille.
+
 02/04/2023
 Version 2.34
 Optimisation du serveur web (idée de Bellule)
