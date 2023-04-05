@@ -1,6 +1,6 @@
 /**************************************************
 **                  COMPANION                    **
-**                Version 2.36                   **
+**                Version 2.37                   **
 **                @jjhontebeyrie                 **
 ***************************************************
 **               Affichage déporté               **
@@ -77,8 +77,10 @@ String RSSI; // Puissance signal WiFi
 uint32_t volt ; // Voltage batterie
 int vertical = 15;
 bool wink = false;
-#define PIN_INPUT 0
-OneButton button(PIN_INPUT, true);
+
+// Boutons, pour les inverser, inversez 0 et 14
+OneButton button(0, true); // Bouton éclairage
+int BTNCumuls = 14; // Bouton cumuls
 
 // Pointeurs pour relance recherche valeurs
 bool awaitingArrivals = true;
@@ -90,6 +92,7 @@ const int freq = 1000;
 const int ledChannel = 0;
 const int resolution = 8;
 int dim = 150; // Eclairage intermédiaire au lancement
+int dim_temp = 150;
 bool inverse = true;
 int x;
 
@@ -132,8 +135,8 @@ void setup(){
   // Activation du port batterie interne
   if (lipo) {pinMode(15,OUTPUT); digitalWrite(15,1);}
 
-  //Initialisation des 2 boutons
-  pinMode(14, INPUT_PULLUP);
+  //Initialisation du bouton pour cumuls
+  pinMode(BTNCumuls, INPUT_PULLUP);
   // Initialisation ecran   
   lcd.init();
   lcd.setRotation(rotation); 
@@ -258,13 +261,13 @@ void loop(){
 
  // Teste si veille demandée
   if (veille) {
-    if (PV.toInt() <= 0){ 
-      dim = 0; // on met l'écran en arrêt si pv = 0 
-      ledcWrite(ledChannel, dim);}
+    dim = dim_temp;
+    if (PV.toInt() <= 0) dim = 0; // on met l'écran en arrêt si pv = 0
+    ledcWrite(ledChannel, dim);
   }
 
   // Si bouton pressé, affiche cumuls momentanément
-  if (digitalRead(14) == 0) AfficheCumul();
+  if (digitalRead(BTNCumuls) == 0) AfficheCumul();
 
   // Modification intensité lumineuse sous forme va  & vient
   // et gestion double clic (by Felvic encore !)                   
@@ -340,43 +343,43 @@ void serveurweb() {
             clientweb.println("<div class=\"w3-card-4 w3-green w3-padding-16 w3-xxxlarge w3-center\">");
             clientweb.println("<p>Production Solaire</p>"); // (personnalisation possible, changez le titre)
             clientweb.print(PV); // Valeur Panneaux Photovoltaiques (personnalisation possible)
-            clientweb.println(" w");
+            clientweb.println(" W");
             clientweb.println("</div>");
 
             clientweb.println("<div class=\"w3-card-4 w3-light-blue w3-padding-16 w3-xxxlarge w3-center\">");
             clientweb.println("<p>Routage vers le ballon</p>"); // (personnalisation possible, changez le titre)
             clientweb.print(CU);  // Valeur Recharge Cumulus (personnalisation possible)
-            clientweb.println(" w");
+            clientweb.println(" W");
             clientweb.println("</div>");
 
             clientweb.println("<div class=\"w3-card-4 w3-pale-yellow w3-padding-16 w3-xxxlarge w3-center\">");
             clientweb.println("<p>Consommation EDF</p>"); // (personnalisation possible, changez le titre)
             clientweb.print(CO);  // Valeur Consommation EDF (personnalisation possible)
-            clientweb.println(" w");
+            clientweb.println(" W");
             clientweb.println("</div>");
 
             clientweb.println("<div class=\"w3-card-4 w3-grey w3-padding-16 w3-xxxlarge w3-center\">");
-            clientweb.println("<p>Production Solaire (journée)</p>"); // (personnalisation possible, changez le titre)
+            clientweb.println("<p>Production Solaire (jour)</p>"); // (personnalisation possible, changez le titre)
             clientweb.print(CUMPV); // Cumul Panneaux Photovoltaiques (personnalisation possible)
-            clientweb.println(" w");
+            clientweb.println(" Wh");
             clientweb.println("</div>");
 
             clientweb.println("<div class=\"w3-card-4 w3-light-grey w3-padding-16 w3-xxxlarge w3-center\">");
-            clientweb.println("<p>Recharge Cumulus (journée)</p>"); // (personnalisation possible, changez le titre)
+            clientweb.println("<p>Recharge Cumulus (jour)</p>"); // (personnalisation possible, changez le titre)
             clientweb.print(CUMBAL);  // Valeur cumul recharge cumulus (personnalisation possible)
-            clientweb.println(" w");
+            clientweb.println(" Wh");
             clientweb.println("</div>");
 
             clientweb.println("<div class=\"w3-card-4 w3-white w3-padding-16 w3-xxxlarge w3-center\">");
-            clientweb.println("<p>Consommation journalière</p>"); // (personnalisation possible, changez le titre)
+            clientweb.println("<p>Consommation totale (jour)</p>"); // (personnalisation possible, changez le titre)
             clientweb.print(CUMCO);  // Cumul Consommation EDF (personnalisation possible)
-            clientweb.println(" w");
+            clientweb.println(" Wh");
             clientweb.println("</div>");
 
             clientweb.println("<div class=\"w3-card-4 w3-pale-blue w3-padding-16 w3-xxxlarge w3-center\">");
-            clientweb.println("<p>Réinjection éventuelle</p>"); // (personnalisation possible, changez le titre)
+            clientweb.println("<p>Injection totale (jour)</p>"); // (personnalisation possible, changez le titre)
             clientweb.print(CUMINJ);  // Cumul injection EDF (personnalisation possible)
-            clientweb.println(" w");
+            clientweb.println(" Wh");
             clientweb.println("</div>");
             // <<<<<<<<<<<<<<<<<<<<<<< Fin Affichage des données MSunPV  >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
@@ -709,6 +712,7 @@ void Eclairage(){
     if (dim >= 250) {dim = 250; inverse = false;}
   }
   delay(300);
+  dim_temp = dim;
   Barlight();
 }
 
@@ -724,7 +728,7 @@ void Barlight(){
   // Rafraichissement de tout l'écran
   sprite.pushSprite(0,0);
   // Réglage de la luminosité
-  ledcWrite(ledChannel, dim); 
+  ledcWrite(ledChannel, dim);
 }
 
 /***************************************************************************************
