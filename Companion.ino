@@ -1,8 +1,8 @@
+//*************************************************
+//                  COMPANION                    **
+String          Version = "2.40";                
+//                @jjhontebeyrie                 **
 /**************************************************
-**                  COMPANION                    **
-**                Version 2.37                   **
-**                @jjhontebeyrie                 **
-***************************************************
 **               Affichage déporté               **
 **            de consommation solaire            ** 
 **                pour MSunPV                    **
@@ -41,6 +41,9 @@
 #include "logo.h"
 #include "images.h"
 #include "meteo.h"
+#include <esp_task_wdt.h>  //watchdog
+//10 seconds WDT
+#define WDT_TIMEOUT 10
 
 TFT_eSPI lcd = TFT_eSPI();
 TFT_eSprite sprite = TFT_eSprite(&lcd);   // Tout l'écran
@@ -91,8 +94,8 @@ const int PIN_LCD_BL = 38;
 const int freq = 1000;
 const int ledChannel = 0;
 const int resolution = 8;
-int dim = 150; // Eclairage intermédiaire au lancement
-int dim_temp = 150;
+int dim = 150;      // Eclairage intermédiaire au lancement
+int dim_temp = 150; // Eclairage sortie de veille
 bool inverse = true;
 int x;
 
@@ -132,6 +135,11 @@ const long timeoutTime = 5000;
 //                                 Routine SETUP                                     //
 /////////////////////////////////////////////////////////////////////////////////////// 
 void setup(){ 
+  // Watchdog
+  Serial.println("Configuring WDT...");
+  esp_task_wdt_init(WDT_TIMEOUT, true);  //enable panic so ESP32 restarts
+  esp_task_wdt_add(NULL);                //add current thread to WDT watch
+
   // Activation du port batterie interne
   if (lipo) {pinMode(15,OUTPUT); digitalWrite(15,1);}
 
@@ -146,6 +154,8 @@ void setup(){
   depart.createSprite(300,146);
   depart.setSwapBytes(true);
   depart.pushImage(0,0,300,146,image);
+  depart.setTextColor(TFT_BLUE,TFT_WHITE);
+  depart.drawString("Version " + (Version),100,0,2);
   depart.pushSprite(10,20,TFT_WHITE);
   
   // Creation des sprites affichage
@@ -172,7 +182,12 @@ void setup(){
   while (!Serial) {
     delay(100); // wait for serial port to connect. Needed for native USB port only
   }  
-   // delete old config et vérif de deconnexion
+
+  Serial.println("Configuraton du WDT...");
+  esp_task_wdt_init(WDT_TIMEOUT, true);  //enable panic so ESP32 restarts
+  esp_task_wdt_add(NULL);                //add current thread to WDT watch
+
+  // delete old config et vérif de deconnexion
   WiFi.disconnect(true);
   delay(1000);
 
@@ -186,7 +201,7 @@ void setup(){
   WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
     Serial.print("."); 
-    delay(1000);   
+    delay(100);   
     }
   Serial.println("WiFi connected.");
   IP=WiFi.localIP().toString();
@@ -194,6 +209,7 @@ void setup(){
   // Récupération de l'heure
   udp.begin(localPort);
   syncTime();
+  esp_task_wdt_reset();
 
   // Paramètres pour dimmer
   ledcSetup(ledChannel, freq, resolution);
@@ -215,7 +231,9 @@ void setup(){
   // link the doubleclick function to be called on a doubleclick event.
   button.attachClick(handleClick);
   button.attachDoubleClick(doubleClick);
+  // Lancement serveur web
   server.begin();
+  esp_task_wdt_reset();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -223,7 +241,7 @@ void setup(){
 /////////////////////////////////////////////////////////////////////////////////////// 
 void loop(){
 
-  // Teste si demande lecture web
+  // Teste si demande lecture serveur web
   serveurweb();
 
   // Etat batterie
@@ -261,7 +279,7 @@ void loop(){
 
  // Teste si veille demandée
   if (veille) {
-    dim = dim_temp;
+    dim = dim_temp; // Pour la sortie de veille
     if (PV.toInt() <= 0) dim = 0; // on met l'écran en arrêt si pv = 0
     ledcWrite(ledChannel, dim);
   }
@@ -277,6 +295,7 @@ void loop(){
   if (WiFi.status() != WL_CONNECTED) ESP.restart();
 
   booted = false;
+  esp_task_wdt_reset();
 } 
 
 /***************************************************************************************
@@ -287,8 +306,9 @@ void serveurweb() {
   // Ceci permet une lecture sur un téléphone par exemple mais aussi
   // à distance si l'adresse du companion est fixe. Commencez par
   // vous connecter sur l'adresse affichée sur l'écran d'accueil
-  WiFiClient clientweb = server.available();  // Ecoute si un client web se connecte
-  if (clientweb) {
+ WiFiClient clientweb = server.available();  // Listen for incoming clients
+
+  if (clientweb) {                  // If a new client connects,
     Serial.println("New Client.");  // print a message out in the serial port
     String currentLine = "";        // make a String to hold incoming data from the client
     currentTime = millis();
@@ -330,60 +350,73 @@ void serveurweb() {
 
             clientweb.println("</head>");
             clientweb.println("<body>");
+            //script             
+            clientweb.println("<script>");
+            clientweb.println("function toggleBottom() {");
+            clientweb.println("var bottomDiv = document.getElementById(\"bottom\");");
+            clientweb.println("if (bottomDiv.style.display === \"none\") {");
+            clientweb.println("bottomDiv.style.display = \"block\";");
+            clientweb.println("} else {");
+            clientweb.println("bottomDiv.style.display = \"none\";");
+            clientweb.println("}");
+            clientweb.println("}");
+            clientweb.println("</script>");
 
             // Web Page Heading
             clientweb.println("<div class= \"w3-container w3-black w3-center w3-allerta\">");
-            clientweb.println("<body><h1>MSunPV Companion</h1>");
+            clientweb.println("<h1>MSunPV Companion</h1>");
             clientweb.println("</div>");
 
-            // <<<<<<<<<<<<<<<<<<<<<<<< Affichage des données MSunPV  >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-            // <<    Vous pouvez personnaliser les données qui sont affichées sur le serveur web      >>
-            //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
             clientweb.println("<div id=\"div_refresh\">");
+            // <<<<<<<<<<<<<<<<<<<<<<<< Affichage des données MSunPV  >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
             clientweb.println("<div class=\"w3-card-4 w3-green w3-padding-16 w3-xxxlarge w3-center\">");
-            clientweb.println("<p>Production Solaire</p>"); // (personnalisation possible, changez le titre)
-            clientweb.print(PV); // Valeur Panneaux Photovoltaiques (personnalisation possible)
-            clientweb.println(" W");
+            clientweb.println("<p>Production Solaire</p>");
+            clientweb.print(PV);  // Valeur Panneaux Photovoltaiques
+            clientweb.println(" w");
             clientweb.println("</div>");
 
             clientweb.println("<div class=\"w3-card-4 w3-light-blue w3-padding-16 w3-xxxlarge w3-center\">");
-            clientweb.println("<p>Routage vers le ballon</p>"); // (personnalisation possible, changez le titre)
-            clientweb.print(CU);  // Valeur Recharge Cumulus (personnalisation possible)
-            clientweb.println(" W");
+            clientweb.println("<p>Routage vers le ballon</p>");
+            clientweb.print(CU);  // Valeur Recharge Cumulus
+            clientweb.println(" w");
             clientweb.println("</div>");
 
-            clientweb.println("<div class=\"w3-card-4 w3-pale-yellow w3-padding-16 w3-xxxlarge w3-center\">");
-            clientweb.println("<p>Consommation EDF</p>"); // (personnalisation possible, changez le titre)
-            clientweb.print(CO);  // Valeur Consommation EDF (personnalisation possible)
-            clientweb.println(" W");
+            clientweb.println("<div class=\"w3-card-4 w3-deep-purple  w3-padding-16 w3-xxxlarge w3-center\">");
+            clientweb.println("<p>Consommation EDF</p>");
+            clientweb.print(CO);  // Valeur Consommation EDF
+            clientweb.println(" w");
+            clientweb.println("</div>");
             clientweb.println("</div>");
 
-            clientweb.println("<div class=\"w3-card-4 w3-grey w3-padding-16 w3-xxxlarge w3-center\">");
-            clientweb.println("<p>Production Solaire (jour)</p>"); // (personnalisation possible, changez le titre)
-            clientweb.print(CUMPV); // Cumul Panneaux Photovoltaiques (personnalisation possible)
-            clientweb.println(" Wh");
+            clientweb.println("<center>");
+            clientweb.println("<button class=\"w3-bar w3-black w3-button w3-large w3-hover-white\" onclick=\"toggleBottom()\">Informations journalières</button>");
+            clientweb.println("</center>");
+            clientweb.println("<div id=\"bottom\" style=\"display:none;\">");
+            
+            clientweb.println("<div class=\"w3-card-4  w3-khaki w3-padding-16 w3-xxxlarge w3-center\">");
+            clientweb.println("<p>Production Solaire journalière</p>");
+            clientweb.print(CUMPV);  // Cumul Panneaux Photovoltaiques
+            if (nbrentier) clientweb.println(" kWh"); else clientweb.println(" Wh");
             clientweb.println("</div>");
 
-            clientweb.println("<div class=\"w3-card-4 w3-light-grey w3-padding-16 w3-xxxlarge w3-center\">");
-            clientweb.println("<p>Recharge Cumulus (jour)</p>"); // (personnalisation possible, changez le titre)
-            clientweb.print(CUMBAL);  // Valeur cumul recharge cumulus (personnalisation possible)
-            clientweb.println(" Wh");
+            clientweb.println("<div class=\"w3-card-4  w3-amber w3-padding-16 w3-xxxlarge w3-center\">");
+            clientweb.println("<p>Recharge Cumulus journalière</p>");
+            clientweb.print(CUMBAL);  // Valeur cumul recharge cumulus
+            if (nbrentier) clientweb.println(" kWh"); else clientweb.println(" Wh");
+            clientweb.println("</div>");
+            
+            clientweb.println("<div class=\"w3-card-4 w3-lime w3-padding-16 w3-xxxlarge w3-center\">");
+            clientweb.println("<p>Consommation EDF journalière</p>");
+            clientweb.print(CUMCO);  // Cumul Consommation EDF
+            if (nbrentier) clientweb.println(" kWh"); else clientweb.println(" Wh");
             clientweb.println("</div>");
 
-            clientweb.println("<div class=\"w3-card-4 w3-white w3-padding-16 w3-xxxlarge w3-center\">");
-            clientweb.println("<p>Consommation totale (jour)</p>"); // (personnalisation possible, changez le titre)
-            clientweb.print(CUMCO);  // Cumul Consommation EDF (personnalisation possible)
-            clientweb.println(" Wh");
+            clientweb.println("<div class=\"w3-card-4 w3-deep-orange w3-padding-16 w3-xxxlarge w3-center\">");
+            clientweb.println("<p>Réinjection sur EDF</p>");
+            clientweb.print(CUMINJ);  // Cumul injection EDF
+            if (nbrentier) clientweb.println(" kWh"); else clientweb.println(" Wh");
             clientweb.println("</div>");
-
-            clientweb.println("<div class=\"w3-card-4 w3-pale-blue w3-padding-16 w3-xxxlarge w3-center\">");
-            clientweb.println("<p>Injection totale (jour)</p>"); // (personnalisation possible, changez le titre)
-            clientweb.print(CUMINJ);  // Cumul injection EDF (personnalisation possible)
-            clientweb.println(" Wh");
-            clientweb.println("</div>");
-            // <<<<<<<<<<<<<<<<<<<<<<< Fin Affichage des données MSunPV  >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
-            //Finalisation page web
+            // <<<<<<<<<<<<<<<<<<<<<<<< Affichage des données MSunPV  >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
             clientweb.println("</div>");
             clientweb.println("</body></html>");
             // The HTTP response ends with another blank line
@@ -391,19 +424,20 @@ void serveurweb() {
             // Break out of the while loop
             break;
           } else {  // if you got a newline, then clear currentLine
-              currentLine = "";
-            }
-          } else if (c != '\r') {  // if you got anything else but a carriage return character,
-            currentLine += c;      // add it to the end of the currentLine
+            currentLine = "";
           }
+        } else if (c != '\r') {  // if you got anything else but a carriage return character,
+          currentLine += c;      // add it to the end of the currentLine
         }
       }
+    }
     // Clear the header variable
     header = "";
     // Close the connection
     clientweb.stop();
     Serial.println("Client disconnected.");
     Serial.println("");
+    esp_task_wdt_reset();
   }
 }
 
@@ -524,6 +558,7 @@ void Affiche(){
   voyant.pushToSprite(&sprite,230,55,TFT_BLACK);
   // Le rafraichissement de l'affichage de tout l'écran est fait dans Barlight()
   Barlight();
+  esp_task_wdt_reset();
 }
 
 /***************************************************************************************
@@ -533,7 +568,7 @@ void AfficheCumul(){
   //  Dessin fenêtre noire et titre
   sprite.fillSprite(TFT_BLACK);
   sprite.setTextColor(TFT_WHITE,TFT_BLACK);
-  sprite.drawString("CUMULS (en Wh)",160,10,2); 
+  if (nbrentier) sprite.drawString("CUMULS (en kWh)",160,10,2); else sprite.drawString("CUMULS (en Wh)",160,10,2); 
 
   // Affichage des rectangles graphiques
   fond.pushImage(0,0,158,77,pano);
@@ -549,9 +584,9 @@ void AfficheCumul(){
   sprite.drawString("Panneaux",240,36,2);
   sprite.drawString("Cumulus",240,112,2); 
 
-  // Affichage des valeurs avec grande police
+  // Affichage des valeurs cumuls
   sprite.setTextColor(TFT_BLACK,color7);
-  sprite.setFreeFont(&Roboto_Thin_24);
+  if (!nbrentier) sprite.setFreeFont(&Roboto_Thin_24);
   sprite.drawString(CUMCO,80,68);
   sprite.drawString(CUMINJ,80,144);
   sprite.drawString(CUMPV,240,68);
@@ -647,11 +682,18 @@ void decrypte(){
   
   // Affichage en entiers si demandé dans perso.h (par etienneroussel)
   if (nbrentier) {
-    CUMCO = String(CUMCO.toInt()); 
-    CUMINJ = String(CUMINJ.toInt()); 
-    CUMPV = String(CUMPV.toInt());
-    CUMBAL = String(CUMBAL.toInt());
-  }
+    CUMCO  = String(wh_to_kwh(CUMCO.toInt()));
+    CUMINJ = String(wh_to_kwh(CUMINJ.toInt()));
+    CUMPV  = String(wh_to_kwh(CUMPV.toInt()));
+    CUMBAL = String(wh_to_kwh(CUMBAL.toInt()));
+
+    // Si votre MSunPV envoie déjà les données en wkh décommentez ces 4 lignes
+    //CUMCO = String(CUMCO);
+    //CUMINJ = String(CUMINJ);
+    //CUMPV = String(CUMPV);
+    //CUMBAL = String(CUMBAL);
+  }  
+  esp_task_wdt_reset();
 }
 
 /***************************************************************************************
@@ -817,6 +859,7 @@ void donneesmeteo(){
 
   // Effacement des chaines pour libérer la mémoire
   delete forecast;
+  esp_task_wdt_reset();
 }
 
 /***************************************************************************************
@@ -825,9 +868,15 @@ void donneesmeteo(){
 void getArrivals() {
  // Use WiFiClient class to create TLS connection
   Serial.println("\nInitialisation de la connexion au serveur...");
-  // if you get a connection, report back via serial.connect(server, 80))
-  if (client.connect(serveur, 80)) {
-    Serial.println("Connecté au serveur");
+
+ // Connexion au serveur web
+  Serial.print("Connexion à ");
+  Serial.println(serveur);
+
+  if (!client.connect(serveur, 80)) {
+    Serial.println("Connexion échouée");
+    return;
+  }
     
     // Make a HTTP request:
     client.print("GET "); client.print(path); client.println(" HTTP/1.1");
@@ -836,6 +885,7 @@ void getArrivals() {
   
     while(!client.available()); //wait for client data to be available
     Serial.println("Attente de la réponse serveur...");
+    delay(5);
 
     while(client.available()) {   
       String line = client.readStringUntil('\r');
@@ -845,8 +895,9 @@ void getArrivals() {
     Serial.println("requete validée");  
     awaitingArrivals = false;
     client.stop();
-  }
-}  
+    esp_task_wdt_reset();
+}
+  
 
 void resetCycle() {
  awaitingArrivals = true;
@@ -973,4 +1024,8 @@ void handleClick() {
 void doubleClick() {
   if (veille) {veille = false; dim = 100;}
   Eclairage();
+}
+
+  float wh_to_kwh(float wh) {
+  return wh / 1000.0;
 }
