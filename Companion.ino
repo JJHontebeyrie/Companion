@@ -41,7 +41,7 @@ String          Version = "2.40";
 #include "logo.h"
 #include "images.h"
 #include "meteo.h"
-#include <esp_task_wdt.h>  //watchdog
+#include <esp_task_wdt.h>  //watchdog  (idée géniale de Bellule)
 //10 seconds WDT
 #define WDT_TIMEOUT 10
 
@@ -134,11 +134,7 @@ const long timeoutTime = 5000;
 ///////////////////////////////////////////////////////////////////////////////////////
 //                                 Routine SETUP                                     //
 /////////////////////////////////////////////////////////////////////////////////////// 
-void setup(){ 
-  // Watchdog
-  Serial.println("Configuring WDT...");
-  esp_task_wdt_init(WDT_TIMEOUT, true);  //enable panic so ESP32 restarts
-  esp_task_wdt_add(NULL);                //add current thread to WDT watch
+void setup(){
 
   // Activation du port batterie interne
   if (lipo) {pinMode(15,OUTPUT); digitalWrite(15,1);}
