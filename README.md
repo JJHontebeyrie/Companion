@@ -23,6 +23,7 @@ Cette version permer l'affichage de :
 * La météo et la température extérieure actuelle
 * L'heure du lever et coucher de soleil
 * Mise en veille programmable et réactivation automatique
+* En cas de perte de signal, récupération automatique
 * Divers voyants indiquant la mise en route d’un chauffage électrique ou le point de givre
 * Fonction serveur web avec possibilité de lire les données depuis un navigateur
 
