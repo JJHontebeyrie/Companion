@@ -7,8 +7,8 @@
 ***     >>>>>  Les valeurs correspondantes à vos branchements               ***
 ***            et sondes sont à modifier éventuellement                     ***
 ***            dans le fichier companion.ino                                ***
-***            aux lignes 453 et suivantes pour les index                   ***
-***            et 500 et suivantes pour les cumuls                          ***
+***            aux lignes 627 et suivantes pour les index                   ***
+***            et 674 et suivantes pour les cumuls                          ***
 ******************************************************************************/
 
 // Vos codes accès au wifi. Remplacez les * par vos valeurs
@@ -27,8 +27,13 @@ int rotation = 3;
 int residuel = 10; // en Watt
 
 // Affichage en nombres entiers
-// (par etienneroussel)
+// Affiche aussi les valeurs en kw quand nécessaire
 bool nbrentier = true;  // ou false pour chiffres avec virgule
+
+// Eclairage intermédiaire au lancement et en sortie de veille
+// Modifiable mais mettez IMPERATIVEMENT des multiples de 50
+// (les valeurs min/max sont 0/250)
+int dim_choisie = 100;      // Eclairage choisi au lancement
 
 // Modifiez les lignes suivantes en fonction de votre équipement
 int puissance = 5000; // production max en watt
@@ -41,7 +46,7 @@ bool lipo = false;
 bool chauffageElectr = true;
 
 // Affichage de température si vous avez installé une sonde sur le cumulus
-// Mettez alors à true et vérifiez ligne 567 dans companion.ino
+// Mettez alors à true et vérifiez ligne 587 dans companion.ino
 bool sonde = false;
 
 // Mise en veille affichage écran quand PV=0 (idée de Defaliz)
@@ -50,7 +55,6 @@ bool veille = false;
 // Localisation de votre ville et décalage horaire pour lever/coucher soleil
 String latitude =  "44.8378"; // 90.0000 to -90.0000 negative for Southern hemisphere
 String longitude = "-0.594"; // 180.000 to -180.000 negative for West
-#define TIME_OFFSET 1UL * 3600UL // UTC + 0 hour (2UL * 3600L pour UTC + 1, etc...)
 
 // Données pour openweathermap.org ( API key et ville)
 String api_key = "**************************";
