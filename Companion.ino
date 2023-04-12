@@ -1,6 +1,6 @@
 //*************************************************
 //                  COMPANION                    **
-String          Version = "2.40";                
+String          Version = "2.45";                
 //                @jjhontebeyrie                 **
 /**************************************************
 **               Affichage déporté               **
@@ -27,23 +27,23 @@ String          Version = "2.40";
 ***************************************************
 ** Les valeurs correspondantes à vos branchements**
 ** et sondes sont à modifier éventuellement      **
-** aux lignes 559 et suivantes pour les index    **
-** et 606 et suivantes pour les cumuls           **
+** aux lignes 627 et suivantes pour les index    **
+** et 674 et suivantes pour les cumuls           **
 **************************************************/
 
-#include <TFT_eSPI.h>
-#include <WiFi.h>
+#include <TFT_eSPI.h>     // Voir pdf du github pour son installation
+#include <WiFi.h>         // Voir pdf du github pour son installation
 #include <JSON_Decoder.h> // https://github.com/Bodmer/JSON_Decoder
 #include <OpenWeather.h>  // Latest here: https://github.com/Bodmer/OpenWeather
 #include "NTP_Time.h"     // Attached to this sketch, see that tab for library needs
 #include <OneButton.h>    // OneButton par Matthias Hertel (dans le gestionnaire de bibliothèque)
-#include "perso.h"
-#include "logo.h"
-#include "images.h"
-#include "meteo.h"
-#include <esp_task_wdt.h>  //watchdog  (idée géniale de Bellule)
-//10 seconds WDT
-#define WDT_TIMEOUT 10
+#include "perso.h"       // Données personnelles à modifier dans le fichier (voir en haut de cet écran)
+#include "logo.h"         // Logo de départ
+#include "images.h"       // Images affichées sur l'écran
+#include "meteo.h"        // Icones météo
+// Watchdog (relance le Companion si perte de signal) Idée géniale de Bellule!
+#include <esp_task_wdt.h>  //watchdog en cas de déconnexion
+#define WDT_TIMEOUT 10     //délai d'activation du watchdog en secondes
 
 TFT_eSPI lcd = TFT_eSPI();
 TFT_eSprite sprite = TFT_eSprite(&lcd);   // Tout l'écran
@@ -66,7 +66,8 @@ TFT_eSprite meteo = TFT_eSprite(&lcd);    // Sprite meteo
 // Couleurs pour affichage cumuls
 #define color6 0xE6D8
 #define color7 0xEF5D
-#define color8 0x16DA // Température cumulus
+// Couleur Température cumulus
+#define color8 0x16DA 
 
 // Chemin acces au fichier de données MSunPV
 char path[] = "/status.xml";
@@ -94,10 +95,8 @@ const int PIN_LCD_BL = 38;
 const int freq = 1000;
 const int ledChannel = 0;
 const int resolution = 8;
-int dim = 150;      // Eclairage intermédiaire au lancement
-int dim_temp = 150; // Eclairage sortie de veille
 bool inverse = true;
-int x;
+int dim, x;
 
 // Variables affichant les valeurs reçues depuis le MSunPV
 String PV,CU,CO,TEMPCU; // Consos et températures. Il y a 16 valeurs, on en récupère que 3 ou 4
@@ -115,13 +114,14 @@ String MsgSplit2[8]; // 8 valeurs à récupérer pour les compteurs cumul
 
 // Données de openweather
 #define TIMEZONE euCET // Voir NTP_Time.h tab pour d'autres "Zone references", UK, usMT etc
-String lever, coucher, date, tempExt, icone, ID;
+String lever, coucher, tempExt, icone, ID;
 OW_Weather ow; // Weather forecast librairie instance
 // Update toutes les 15 minutes, jusqu'à 1000 requêtes par jour gratuit (soit ~40 par heure)
 const int UPDATE_INTERVAL_SECS = 15 * 60UL; // 15 minutes
 bool booted = true;
 long lastDownloadUpdate = millis();
 String timeNow = "";
+String dateNow = "";
 
 // Variables pour serveur web
 WiFiServer server(80);
@@ -130,6 +130,9 @@ unsigned long currentTime = millis(); // Current time
 unsigned long previousTime = 0; // Previous time
 // Define timeout time in milliseconds (example: 2000ms = 2s)
 const long timeoutTime = 5000;
+
+// transforme les W en kW (par Bellule, encore lui!)
+float wh_to_kwh(float wh) {return wh / 1000.0;}
 
 ///////////////////////////////////////////////////////////////////////////////////////
 //                                 Routine SETUP                                     //
@@ -170,7 +173,7 @@ void setup(){
   light.setSwapBytes(true);
   batterie.createSprite(24,24);               // Image batterie
   batterie.setSwapBytes(true);
-  meteo.createSprite(50,50);                  // Image meteo
+  meteo.createSprite(50,50);                  // Icone meteo
   meteo.setSwapBytes(true);
 
  //Initialisation port série et attente ouverture
@@ -216,7 +219,8 @@ void setup(){
   depart.setTextDatum(4);
   depart.drawString("CONNEXION OK (" + (IP) + ") " + (RSSI) + "dB",150,126,2);
   depart.pushSprite(10,20);
-  // Tamisage écran dim 200 (va de 0 à 255)
+  // Tamisage écran (dim varie de 0 à 250)
+  dim = dim_choisie;
   ledcWrite(ledChannel, dim);
   if (veille){
     delay(5000);
@@ -224,7 +228,7 @@ void setup(){
     depart.pushSprite(10,20);
     delay(2000); 
   }
-  // link the doubleclick function to be called on a doubleclick event.
+  // Activation du simple et double clic (by Felvic)
   button.attachClick(handleClick);
   button.attachDoubleClick(doubleClick);
   // Lancement serveur web
@@ -237,15 +241,12 @@ void setup(){
 /////////////////////////////////////////////////////////////////////////////////////// 
 void loop(){
 
-  // Teste si demande lecture serveur web
-  serveurweb();
-
   // Etat batterie
   volt = (analogRead(4) * 2 * 3.3 * 1000) / 4096;
 
   // Lit heure
   if (lastTime + 1000 < millis()){
-    drawTime();    
+    drawTimeDate();    
     lastTime = millis();
   }
 
@@ -275,7 +276,7 @@ void loop(){
 
  // Teste si veille demandée
   if (veille) {
-    dim = dim_temp; // Pour la sortie de veille
+    dim = dim_choisie; // Pour la sortie de veille
     if (PV.toInt() <= 0) dim = 0; // on met l'écran en arrêt si pv = 0
     ledcWrite(ledChannel, dim);
   }
@@ -287,8 +288,8 @@ void loop(){
   // et gestion double clic (by Felvic encore !)                   
   button.tick();
   
-  // Reconnexion en cas de perte (idée de Felvic)
-  if (WiFi.status() != WL_CONNECTED) ESP.restart();
+  // Teste si demande lecture serveur web
+  serveurweb();
 
   booted = false;
   esp_task_wdt_reset();
@@ -362,22 +363,22 @@ void serveurweb() {
             clientweb.println("<div class= \"w3-container w3-black w3-center w3-allerta\">");
             clientweb.println("<h1>MSunPV Companion</h1>");
             clientweb.println("</div>");
-
             clientweb.println("<div id=\"div_refresh\">");
+
             // <<<<<<<<<<<<<<<<<<<<<<<< Affichage des données MSunPV  >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-            clientweb.println("<div class=\"w3-card-4 w3-green w3-padding-16 w3-xxxlarge w3-center\">");
+            clientweb.println("<div class=\"w3-card-4 w3-teal w3-padding-16 w3-xxxlarge w3-center\">");
             clientweb.println("<p>Production Solaire</p>");
             clientweb.print(PV);  // Valeur Panneaux Photovoltaiques
             clientweb.println(" w");
             clientweb.println("</div>");
 
-            clientweb.println("<div class=\"w3-card-4 w3-light-blue w3-padding-16 w3-xxxlarge w3-center\">");
+            clientweb.println("<div class=\"w3-card-4 w3-blue-grey w3-padding-16 w3-xxxlarge w3-center\">");
             clientweb.println("<p>Routage vers le ballon</p>");
             clientweb.print(CU);  // Valeur Recharge Cumulus
             clientweb.println(" w");
             clientweb.println("</div>");
 
-            clientweb.println("<div class=\"w3-card-4 w3-deep-purple  w3-padding-16 w3-xxxlarge w3-center\">");
+            clientweb.println("<div class=\"w3-card-4 w3-padding-16 w3-xxxlarge w3-center\">");
             clientweb.println("<p>Consommation EDF</p>");
             clientweb.print(CO);  // Valeur Consommation EDF
             clientweb.println(" w");
@@ -389,27 +390,27 @@ void serveurweb() {
             clientweb.println("</center>");
             clientweb.println("<div id=\"bottom\" style=\"display:none;\">");
             
-            clientweb.println("<div class=\"w3-card-4  w3-khaki w3-padding-16 w3-xxxlarge w3-center\">");
-            clientweb.println("<p>Production Solaire journalière</p>");
-            clientweb.print(CUMPV);  // Cumul Panneaux Photovoltaiques
+            clientweb.println("<div class=\"w3-card-4 w3-teal w3-padding-16 w3-xxxlarge w3-center\">");
+            clientweb.println("<p>Consommation EDF journalière</p>");
+            clientweb.print(CUMCO);  // Cumul Panneaux Photovoltaiques
             if (nbrentier) clientweb.println(" kWh"); else clientweb.println(" Wh");
             clientweb.println("</div>");
 
-            clientweb.println("<div class=\"w3-card-4  w3-amber w3-padding-16 w3-xxxlarge w3-center\">");
-            clientweb.println("<p>Recharge Cumulus journalière</p>");
-            clientweb.print(CUMBAL);  // Valeur cumul recharge cumulus
+            clientweb.println("<div class=\"w3-card-4  w3-blue-grey w3-padding-16 w3-xxxlarge w3-center\">");
+            clientweb.println("<p>Production Solaire journalière</p>");
+            clientweb.print(CUMPV);  // Valeur cumul recharge cumulus
             if (nbrentier) clientweb.println(" kWh"); else clientweb.println(" Wh");
             clientweb.println("</div>");
             
-            clientweb.println("<div class=\"w3-card-4 w3-lime w3-padding-16 w3-xxxlarge w3-center\">");
-            clientweb.println("<p>Consommation EDF journalière</p>");
-            clientweb.print(CUMCO);  // Cumul Consommation EDF
+            clientweb.println("<div class=\"w3-card-4 w3-dark-grey w3-padding-16 w3-xxxlarge w3-center\">");
+            clientweb.println("<p>Recharge Cumulus journalière</p>");
+            clientweb.print(CUMBAL);  // Cumul Consommation EDF
             if (nbrentier) clientweb.println(" kWh"); else clientweb.println(" Wh");
             clientweb.println("</div>");
 
-            clientweb.println("<div class=\"w3-card-4 w3-deep-orange w3-padding-16 w3-xxxlarge w3-center\">");
-            clientweb.println("<p>Réinjection sur EDF</p>");
-            clientweb.print(CUMINJ);  // Cumul injection EDF
+            clientweb.println("<div class=\"w3-card-4 w3-padding-16 w3-xxxlarge w3-center\">");
+            clientweb.println("<p>Injection sur EDF</p>");
+            clientweb.print(CUMINJ);  // Cumul Injection EDF
             if (nbrentier) clientweb.println(" kWh"); else clientweb.println(" Wh");
             clientweb.println("</div>");
             // <<<<<<<<<<<<<<<<<<<<<<<< Affichage des données MSunPV  >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -495,7 +496,7 @@ void Affiche(){
 
   // Affichage heure et date
     sprite.drawString(String(timeNow),272,17,4);
-    sprite.drawString(String(date),272,43,2);
+    sprite.drawString(String(dateNow),272,43,2);
   
   // Affichage éventuel de la température si sonde validée
   if (sonde) {
@@ -576,17 +577,17 @@ void AfficheCumul(){
   // Affichage des légendes
   sprite.setTextColor(TFT_BLACK,color6);
   sprite.drawString("Consommation",80,36,2);
-  sprite.drawString("Injection",80,112,2);
+  sprite.drawString("Cumulus",80,112,2);
   sprite.drawString("Panneaux",240,36,2);
-  sprite.drawString("Cumulus",240,112,2); 
+  sprite.drawString("Injection",240,112,2); 
 
   // Affichage des valeurs cumuls
   sprite.setTextColor(TFT_BLACK,color7);
   if (!nbrentier) sprite.setFreeFont(&Roboto_Thin_24);
   sprite.drawString(CUMCO,80,68);
-  sprite.drawString(CUMINJ,80,144);
+  sprite.drawString(CUMBAL,80,144);
   sprite.drawString(CUMPV,240,68);
-  sprite.drawString(CUMBAL,240,144);
+  sprite.drawString(CUMINJ,240,144);
 
   // Rafraichissement écran (indispensable après avoir tout dessiné)
   sprite.pushSprite(0,0);
@@ -645,7 +646,7 @@ void decrypte(){
   if (PV.toInt() <= residuel) PV = "0"; // Légère consommation due aux onduleurs
   if (CU.toInt() <= residuel) CU = "0"; // Légère consommation due au thermostat du cumulus
 
-  //  >>>>>>>>>>>>>  Routine made by Patrick, mon sauveur !  <<<<<<<<<<<<<<<
+  //  >>>>>>>>>>>>>  Routine made by Patrick (MSunPV), mon sauveur !  <<<<<<<<<<<<<<<
   for(int i = 0; i < 8; i++) {              //à remplacer par nbre de compteurs à afficher
     char xx[16];
     int yy[16];
@@ -677,13 +678,14 @@ void decrypte(){
   //*************************************************************************************
   
   // Affichage en entiers si demandé dans perso.h (par etienneroussel)
+  // Les Wh sont transformés aussi en kWh (par Bellule)
   if (nbrentier) {
     CUMCO  = String(wh_to_kwh(CUMCO.toInt()));
     CUMINJ = String(wh_to_kwh(CUMINJ.toInt()));
     CUMPV  = String(wh_to_kwh(CUMPV.toInt()));
     CUMBAL = String(wh_to_kwh(CUMBAL.toInt()));
 
-    // Si votre MSunPV envoie déjà les données en wkh décommentez ces 4 lignes
+    // Si votre MSunPV envoie déjà les données en kWh décommentez ces 4 lignes
     //CUMCO = String(CUMCO);
     //CUMINJ = String(CUMINJ);
     //CUMPV = String(CUMPV);
@@ -750,7 +752,6 @@ void Eclairage(){
     if (dim >= 250) {dim = 250; inverse = false;}
   }
   delay(300);
-  dim_temp = dim;
   Barlight();
 }
 
@@ -774,53 +775,10 @@ void Barlight(){
 ***************************************************************************************/
 void batt(){
   // Voltage pour batterie, les chiffres sont à modifier suivant votre batterie
-  if (volt < 3.5) sprite.fillRect(302,127,12,3,color0);
-  if (volt < 3) sprite.fillRect(302,132,12,3,color0);
-  if (volt < 2.5) sprite.fillRect(302,137,12,3,color0);
+  if (volt < 4) sprite.fillRect(302,127,12,3,color0);
+  if (volt < 3.5) sprite.fillRect(302,132,12,3,color0);
+  if (volt < 3) sprite.fillRect(302,137,12,3,color0);
 }
-
-/***************************************************************************************
-**                           Réception des données météo
-**                 Valeurs issues de Open Weather (Gestion One Call)
-***************************************************************************************/
-/*
-void donneesmeteo(){
-  // Valeurs issues de Open Weather (Gestion One Call)
-  // Create the structures that hold the retrieved weather
-  OW_current *current = new OW_current;
-  OW_hourly *hourly = new OW_hourly;
-  OW_daily  *daily = new OW_daily;
-  
-  ow.getForecast(current, hourly, daily, api_key, latitude, longitude, units, language);
-
-  Serial.println("############### Données météo ###############");
-  Serial.print("Latitude            : "); Serial.println(ow.lat);
-  Serial.print("Longitude           : "); Serial.println(ow.lon);
-  Serial.print("Timezone            : "); Serial.println(ow.timezone);
-  Serial.print("Heure actuelle      : "); Serial.println(strTime(current->dt));
-  Serial.print("Lever soleil        : "); Serial.println(strTime(current->sunrise));
-  Serial.print("sunrise             : "); Serial.print(strTime(current->sunrise));
-  Serial.print("Coucher soleil      : "); Serial.println(strTime(current->sunset));
-  Serial.print("temperature         : "); Serial.println(current->temp);
-  Serial.print("description         : "); Serial.println(current->description);
-  Serial.print("icone               : "); Serial.println(current->icon);
-  Serial.print("ID                  : "); Serial.println(current->id);
-
-  lever = strLocalTime(current->sunrise);
-  coucher = strLocalTime(current->sunset);
-  date = strDate(current->dt);
-  tempExt = String(current->temp, 0);  // Température sans décimale
-  if (tempExt.length() < 2) tempExt = " " + tempExt; //et sur 2 caractères
-  icone = (current->icon);
-  ID  = (current->id);
-  if (wink) icone ="80d";
-
-  // Effacement des chaines pour libérer la mémoire
-  delete current;
-  delete hourly;
-  delete daily;
-  }
-  */
 
 /***************************************************************************************
 **                           Réception des données météo
@@ -846,7 +804,6 @@ void donneesmeteo(){
 
   lever = strTime(forecast->sunrise);
   coucher = strTime(forecast->sunset);
-  date = strDate(forecast->dt[0]);
   tempExt = String(forecast->temp[0], 0);  // Température sans décimale
   if (tempExt.length() < 2) tempExt = " " + tempExt; //et sur 2 caractères
   icone = (forecast->icon[0]);
@@ -940,58 +897,29 @@ String strTime(time_t unixTime)
 }
 
 /***************************************************************************************
-**             Conversion Unix time vers "local time" time string "12:34"
+**                        Decryptage de l'heure et Date
 ***************************************************************************************/
-String strLocalTime(time_t unixTime)
-{
-  unixTime += TIME_OFFSET;
-
-  String localTime = "";
-
-  if (hour(unixTime) < 10) localTime += "0";
-  localTime += hour(unixTime);
-  localTime += ":";
-  if (minute(unixTime) < 10) localTime += "0";
-  localTime += minute(unixTime);
-
-  return localTime;
-}
-
-/***************************************************************************************
-**                            Decryptage de l'heure
-***************************************************************************************/
-void drawTime() {
+void drawTimeDate() {
   // Convert UTC to local time, returns zone code in tz1_Code, e.g "GMT"
   time_t local_time = TIMEZONE.toLocal(now(), &tz1_Code);
+
   timeNow = "";
   if (hour(local_time) < 10) timeNow += "0";
   timeNow += hour(local_time);
   timeNow += ":";
   if (minute(local_time) < 10) timeNow += "0";
   timeNow += minute(local_time);
-}
 
-/***************************************************************************************
-**  Conversion Unix time vers local date + time string "Oct 16 17:18", fin avec nvle ligne
-***************************************************************************************/
-String strDate(time_t unixTime)
-{
-  time_t local_time = TIMEZONE.toLocal(unixTime, &tz1_Code);
-
-  String localDate = "";
-  String localDate2 = "";
-  localDate += day(local_time);
-  localDate2 = localDate;
-  localDate += " ";
-  localDate += String(Months[month(local_time)]);
-  localDate2 += month(local_time);
-  if (poisson) {if (localDate2 == "14") wink = true;}
-  return localDate;
+  dateNow = "";
+  dateNow += day(local_time);
+  dateNow += " ";
+  dateNow += String(Months[month(local_time)]);
+  if (poisson) {if (dateNow == "1 Avril") wink = true;}
 }
 
 /***************************************************************************************
 **     Routine de test pour afficher toutes les icones sur l'écran
-**               Décommenter la ligne 254 pour l'activer
+**               Décommenter la ligne 446 pour l'activer
 ***************************************************************************************/
 void test(){
   PV = "0";
@@ -1010,7 +938,7 @@ void test(){
 // Simple clic
 void handleClick() {
   if ((veille) and (PV.toInt() <= 0)) { // Si on clique bouton, veille annulée momentanément
-    dim = 100;
+    dim = dim_choisie;
     Barlight(); 
     delay(5000);} // affichage de 5 secondes
   Eclairage();  
@@ -1018,10 +946,6 @@ void handleClick() {
 
 // Double clic
 void doubleClick() {
-  if (veille) {veille = false; dim = 100;}
+  if (veille) {veille = false; dim = dim_choisie;}
   Eclairage();
-}
-
-  float wh_to_kwh(float wh) {
-  return wh / 1000.0;
 }
