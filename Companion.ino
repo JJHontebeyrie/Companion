@@ -1,6 +1,6 @@
 //*************************************************
 //                  COMPANION                    **
-String          Version = "2.45";                
+String          Version = "2.50";                
 //                @jjhontebeyrie                 **
 /**************************************************
 **               Affichage déporté               **
@@ -41,6 +41,7 @@ String          Version = "2.45";
 #include "logo.h"         // Logo de départ
 #include "images.h"       // Images affichées sur l'écran
 #include "meteo.h"        // Icones météo
+#include <ESPmDNS.h>      //Pour le mDNS
 // Watchdog (relance le Companion si perte de signal) Idée géniale de Bellule!
 #include <esp_task_wdt.h>  //watchdog en cas de déconnexion
 #define WDT_TIMEOUT 10     //délai d'activation du watchdog en secondes
@@ -52,7 +53,7 @@ TFT_eSprite depart = TFT_eSprite(&lcd);   // Sprite écran d'accueil
 TFT_eSprite sun = TFT_eSprite(&lcd);      // Sprite Hors service & soleil
 TFT_eSprite Chauffe = TFT_eSprite(&lcd);  // Sprite indicateur chauffage électrique
 TFT_eSprite fond = TFT_eSprite(&lcd);     // Sprite contour affichage cumuls
-TFT_eSprite light = TFT_eSprite(&lcd);    // Sprite ampoule
+TFT_eSprite wifi = TFT_eSprite(&lcd);     // Sprite wifi
 TFT_eSprite batterie = TFT_eSprite(&lcd); // Sprite batterie
 TFT_eSprite meteo = TFT_eSprite(&lcd);    // Sprite meteo
 
@@ -169,8 +170,8 @@ void setup(){
   Chauffe.setSwapBytes(true);
   fond.createSprite(158,77);                  // Image de fond des cumuls
   fond.setSwapBytes(true);
-  light.createSprite(24,24);                  // Image ampoule
-  light.setSwapBytes(true);
+  wifi.createSprite(24,23);                   // Image wifi
+  wifi.setSwapBytes(true);
   batterie.createSprite(24,24);               // Image batterie
   batterie.setSwapBytes(true);
   meteo.createSprite(50,50);                  // Icone meteo
@@ -228,11 +229,24 @@ void setup(){
     depart.pushSprite(10,20);
     delay(2000); 
   }
+
   // Activation du simple et double clic (by Felvic)
   button.attachClick(handleClick);
   button.attachDoubleClick(doubleClick);
+
+  // Activation du mDNS responder: encore idée de Bellule
+  // il suffit de taper dans l'invite du navigateur web
+  // cette simple commande http://companion pour y accéder
+  if (!MDNS.begin("companion")) {
+    Serial.println("Error setting up MDNS responder!");
+    while (1) {delay(1000);}
+  }
+  Serial.println("mDNS responder started");
   // Lancement serveur web
   server.begin();
+  // Ajout duservice to MDNS-SD
+  MDNS.addService("http", "tcp", 80);
+
   esp_task_wdt_reset();
 }
 
@@ -464,8 +478,6 @@ void Affiche(){
     vertical = 0;
     batterie.pushImage(0,0,24,24,pile);
     batterie.pushToSprite(&sprite,296,121,TFT_BLACK);}
-  light.pushImage(0,0,24,24,bulb);
-  light.pushToSprite(&sprite,296,(57 + vertical),TFT_BLACK);
 
   // Affichage Météo
   meteo.pushImage(0,0,50,50,unknown);
@@ -536,11 +548,11 @@ void Affiche(){
 
   //Voyant assistant de consommation
   if (CO.toInt() > PV.toInt()) voyant.pushImage(0,0,68,68,BtnR);
-  if (PV.toInt() > CO.toInt()) voyant.pushImage(0,0,68,68,BtnB); 
+  if (PV.toInt() > CO.toInt()) voyant.pushImage(0,0,68,68,BtnO); 
   if ((PV.toInt() > CO.toInt()) and (PV.toInt() > 1200)) voyant.pushImage(0,0,68,68,BtnV);  
   if (CO.toInt() < 0) voyant.pushImage(0,0,68,68,BtnV);
   if (PV.toInt() < residuel) voyant.pushImage(0,0,68,68,BtnR);
-                  
+             
   // En cas de chauffage électrique
   if (chauffageElectr) {               
     if ((CO.toInt() + PV.toInt() > 3000) and (CU.toInt() < 100)){  
@@ -761,9 +773,11 @@ void Eclairage(){
 void Barlight(){
   x = dim/50; // steps de 50
   for(int i = 0;i<5;i++) sprite.fillRect(302,85+vertical+(i*6),12,5,color0);
-  for(int i = 0;i<x;i++) sprite.fillRect(302,85+vertical+(i*6),12,5,color3);
+  for(int i = 0;i<x;i++) sprite.fillRect(302,109+vertical-(i*6),12,5,color3);
   // Gestion batterie
   if (lipo) batt();
+  // Puissance du signal WiFi
+  signalwifi();
   // Rafraichissement de tout l'écran
   sprite.pushSprite(0,0);
   // Réglage de la luminosité
@@ -778,6 +792,21 @@ void batt(){
   if (volt < 4) sprite.fillRect(302,127,12,3,color0);
   if (volt < 3.5) sprite.fillRect(302,132,12,3,color0);
   if (volt < 3) sprite.fillRect(302,137,12,3,color0);
+}
+
+/***************************************************************************************
+**                            Gestion du signal Wifi
+***************************************************************************************/
+void signalwifi(){
+  // Etat du signal WiFi
+  RSSI = String(WiFi.RSSI());
+  // Attention à -65dB on a toutes les barres, c'est adapté au Companion !
+  if (RSSI.toInt() <= -65) wifi.pushImage(0,0,24,24,signal4);
+  if (RSSI.toInt() <= -70) wifi.pushImage(0,0,24,24,signal3);
+  if (RSSI.toInt() <= -75) wifi.pushImage(0,0,24,24,signal2);
+  if (RSSI.toInt() <= -80) wifi.pushImage(0,0,24,24,signal1);
+  if (RSSI.toInt() <= -90) wifi.pushImage(0,0,24,24,signal0);
+  wifi.pushToSprite(&sprite,296,(57 + vertical),TFT_BLACK);
 }
 
 /***************************************************************************************
