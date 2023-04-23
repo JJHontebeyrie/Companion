@@ -25,6 +25,7 @@ Cette version permer l'affichage de :
 * Mise en veille programmable et réactivation automatique
 * En cas de perte de signal, récupération automatique
 * Divers voyants indiquant la mise en route d’un chauffage électrique ou le point de givre
+* Puissance du réseau wifi, intéressant pour positionner l'afficheur alimenté par piles
 * Fonction serveur web avec possibilité de lire les données depuis un navigateur
 
 
