@@ -1,6 +1,6 @@
 //*************************************************
 //                  COMPANION                    **
-String          Version = "2.50";                
+String          Version = "2.51";                
 //                @jjhontebeyrie                 **
 /**************************************************
 **               Affichage déporté               **
@@ -59,16 +59,19 @@ TFT_eSprite meteo = TFT_eSprite(&lcd);    // Sprite meteo
 
 // Couleurs bargraph
 #define color0 0x10A2   //Sombre 
-#define color1 0x07E0   //Blanc 
-#define color2 0x26FB   //Vert
-#define color3 0xF780   //Bleu
-#define color4 0xFC00   //Orange
+#define color00 0x7FB8  //Vert clair
+#define color1 0x07E0   //Vert 
+#define color2 0x26FB   //Bleu
+#define color3 0xF780   //Jaune
+#define color4 0xFD8C   //Orange
+#define color45 0xFC10  //Rouge leger
 #define color5 0xF9A6   //Rouge
 // Couleurs pour affichage cumuls
 #define color6 0xE6D8
 #define color7 0xEF5D
 // Couleur Température cumulus
 #define color8 0x16DA 
+unsigned long couleur;
 
 // Chemin acces au fichier de données MSunPV
 char path[] = "/status.xml";
@@ -469,7 +472,7 @@ void Affiche(){
   sprite.drawRoundRect(0,57,226,55,3,TFT_WHITE);
   sprite.drawString("CUMULUS",115,68,2);
   sprite.drawRoundRect(0,114,226,55,3,TFT_WHITE);
-  sprite.drawString("CONSOMMATION EDF",115,126,2);
+  //Affichage titre conso/injection dans routine indic
 
   //Panneau de droite sur l'écran : heure, date, dimer, batterie
   sprite.drawRoundRect(234,0,80,31,3,TFT_WHITE);
@@ -503,7 +506,7 @@ void Affiche(){
   sprite.setTextDatum(4); // retour au centre milieu
   sprite.setTextColor(TFT_CYAN,TFT_BLACK);
   if (tempExt.toInt() <= 3) sprite.drawString("*", 285, 168,4);  
-  sprite.setTextColor(TFT_WHITE,TFT_BLACK);
+  sprite.setTextColor(TFT_WHITE,TFT_BLACK); // Retour texte normal
   meteo.pushToSprite(&sprite,235,120,TFT_BLACK);
 
   // Affichage heure et date
@@ -512,21 +515,14 @@ void Affiche(){
   
   // Affichage éventuel de la température si sonde validée
   if (sonde) {
-    sprite.setTextDatum(5); // centre droit 
-    sprite.drawString(TEMPCU,33,85,2);
-    sprite.drawCircle(36,79,2,TFT_WHITE); // pour °
-    sprite.setTextDatum(4); // retour au centre milieu
-    sprite.drawCircle(25,84,20,color1);
-    sprite.drawCircle(25,84,19,color1);
-    if (TEMPCU.toInt() >= 30) {
-      sprite.drawCircle(25,84,20,color8);
-      sprite.drawCircle(25,84,19,color8);}
-    if (TEMPCU.toInt() >= 50) {
-      sprite.drawCircle(25,84,20,color4);
-      sprite.drawCircle(25,84,19,color4);}
-    if (TEMPCU.toInt() >= 60) {
-      sprite.drawCircle(25,84,20,color5);
-      sprite.drawCircle(25,84,19,color5);}
+    sprite.drawString(TEMPCU,26,85,2);
+    //sprite.drawCircle(39,79,2,TFT_WHITE); // pour ° 
+    couleur = color1;
+    if (TEMPCU.toInt() >= 40) couleur = color8;
+    if (TEMPCU.toInt() >= 50) couleur = color4;
+    if (TEMPCU.toInt() >= 60) couleur = color5;
+    sprite.drawCircle(25,84,20,couleur);
+    sprite.drawCircle(25,84,19,couleur);
   } 
 
   // Affichage des valeurs des compteurs
@@ -644,8 +640,6 @@ void decrypte(){
 
   // Formatage des valeurs pour affichage sur l'écran 
   PV = String(abs(PV.toInt()));  // (avec prod en + ou en -)
-  TEMPCU = TEMPCU.toInt();
-  if (TEMPCU.length() < 2) TEMPCU = " " + TEMPCU; // 2 caractères
 
   // Affichage en entiers si demandé dans perso.h
   if (nbrentier) {
@@ -718,13 +712,13 @@ void indic(){
   int ecart = (pmax - pmin) / 8; // steps ecart entre min et max
   int nbbarres = (valeur/ecart); // combien de steps dans prod en cours
   if (nbbarres > 8) nbbarres = 8; // on bloque les steps à 8
-  if (valeur > residuel) 
-    { // Permet l'affichage d'au moins une barre si on produit
-      for(i = 0;i<8;i++) sprite.fillRect(200,(44-(i*5)),20,4,color0); 
-      sprite.fillRect(200,44,20,4,color1);                   
-    }
-  // Affichage de barres supplémentaires fonction de la prod
-  for(i = 0;i<nbbarres;i++) sprite.fillRect(200,(44-(i*5)),20,4,color1);
+  for(i = 0;i<8;i++) sprite.fillRect(200,(44-(i*5)),20,4,color0);
+  if (valeur > residuel) { 
+    // Permet l'affichage d'au moins une barre si on produit
+    sprite.fillRect(200,44,20,4,color3);                   
+    // Affichage de barres supplémentaires fonction de la prod
+    for(i = 0;i<nbbarres;i++) sprite.fillRect(200,(44-(i*5)),20,4,color3);
+  }
 
  // Cumulus
   valeur = CU.toInt();
@@ -732,22 +726,36 @@ void indic(){
   nbbarres = (valeur/ecart); 
   if (nbbarres > 8) nbbarres = 8;
   for(i = 0;i<8;i++) sprite.fillRect(200,(100-(i*5)),20,4,color0);   
-  if (valeur > residuel) sprite.fillRect(200,100,20,4,color4);
-  for(i = 0;i<nbbarres;i++) sprite.fillRect(200,(100-(i*5)),20,4,color4);    
+  if (valeur > residuel) {
+    sprite.fillRect(200,100,20,4,color4);
+    for(i = 0;i<nbbarres;i++) sprite.fillRect(200,(100-(i*5)),20,4,color4); 
+  }   
    
   // Consommation
   valeur = CO.toInt();
   for(i = 0;i<8;i++) sprite.fillRect(200,(158-(i*5)),20,4,color0); 
   if (valeur != 0){
-    if (valeur < 0) sprite.fillRect(200,153,20,9,TFT_WHITE); else sprite.fillRect(200,158,20,4,color1);
-    if (valeur > 500) sprite.fillRect(200,153,20,4,color1);
-    if (valeur > 1000) sprite.fillRect(200,148,20,4,color2);
-    if (valeur > 1500) sprite.fillRect(200,143,20,4,color2);
-    if (valeur > 2000) sprite.fillRect(200,138,20,4,color3);
-    if (valeur > 2500) sprite.fillRect(200,133,20,4,color3);
-    if (valeur > 3000) sprite.fillRect(200,128,20,4,color4);
-    if (valeur > 4000) sprite.fillRect(200,123,20,4,color5);
+    // Affichage 1 barre dès conso ou injection
+    sprite.fillRect(200,158,20,4,color1);
+    if (valeur < 0) { // On injecte
+      sprite.drawString("INJECTION",115,126,2);
+      nbbarres = abs(valeur/500);
+      if (nbbarres > 8) nbbarres = 8;
+      for(i = 0;i<nbbarres;i++) sprite.fillRect(200,(158-(i*5)),20,4,color1); 
+      }
+    else { // On consomme, bargraph multicolore
+      sprite.drawString("CONSOMMATION EDF",115,126,2);
+      sprite.fillRect(200,158,20,4,color00);
+      if (valeur > 500) sprite.fillRect(200,153,20,4,color1);
+      if (valeur > 1000) sprite.fillRect(200,148,20,4,color2);
+      if (valeur > 1500) sprite.fillRect(200,143,20,4,TFT_CYAN);
+      if (valeur > 2000) sprite.fillRect(200,138,20,4,color3);
+      if (valeur > 2500) sprite.fillRect(200,133,20,4,color4);
+      if (valeur > 3000) sprite.fillRect(200,128,20,4,color45);
+      if (valeur > 4000) sprite.fillRect(200,123,20,4,color5);
+    }
   }
+  else sprite.drawString("CONSOMMATION NULLE",115,126,2);
 }
 
 /***************************************************************************************
@@ -801,11 +809,11 @@ void signalwifi(){
   // Etat du signal WiFi
   RSSI = String(WiFi.RSSI());
   // Attention à -65dB on a toutes les barres, c'est adapté au Companion !
-  if (RSSI.toInt() <= -65) wifi.pushImage(0,0,24,24,signal4);
-  if (RSSI.toInt() <= -70) wifi.pushImage(0,0,24,24,signal3);
-  if (RSSI.toInt() <= -75) wifi.pushImage(0,0,24,24,signal2);
-  if (RSSI.toInt() <= -80) wifi.pushImage(0,0,24,24,signal1);
-  if (RSSI.toInt() <= -90) wifi.pushImage(0,0,24,24,signal0);
+  wifi.pushImage(0,0,24,23,signal4); // Signal max par défaut
+  if (RSSI.toInt() <= -70) wifi.pushImage(0,0,24,23,signal3);
+  if (RSSI.toInt() <= -75) wifi.pushImage(0,0,24,23,signal2);
+  if (RSSI.toInt() <= -80) wifi.pushImage(0,0,24,23,signal1);
+  if (RSSI.toInt() <= -90) wifi.pushImage(0,0,24,23,signal0);
   wifi.pushToSprite(&sprite,296,(57 + vertical),TFT_BLACK);
 }
 
