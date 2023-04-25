@@ -1,6 +1,6 @@
 //*************************************************
 //                  COMPANION                    **
-String          Version = "2.51";                
+String          Version = "2.52";                
 //                @jjhontebeyrie                 **
 /**************************************************
 **               Affichage déporté               **
@@ -712,8 +712,9 @@ void indic(){
   int ecart = (pmax - pmin) / 8; // steps ecart entre min et max
   int nbbarres = (valeur/ecart); // combien de steps dans prod en cours
   if (nbbarres > 8) nbbarres = 8; // on bloque les steps à 8
-  for(i = 0;i<8;i++) sprite.fillRect(200,(44-(i*5)),20,4,color0);
-  if (valeur > residuel) { 
+
+  if (valeur > residuel) {
+    for(i = 0;i<8;i++) sprite.fillRect(200,(44-(i*5)),20,4,color0);
     // Permet l'affichage d'au moins une barre si on produit
     sprite.fillRect(200,44,20,4,color3);                   
     // Affichage de barres supplémentaires fonction de la prod
