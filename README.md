@@ -26,9 +26,8 @@ Cette version permer l'affichage de :
 * En cas de perte de signal, récupération automatique
 * Divers voyants indiquant la mise en route d’un chauffage électrique ou le point de givre
 * Puissance du réseau wifi affichée, intéressant pour positionner l'afficheur alimenté par piles
-* Accès à l'afficheur avec l'invite http://companion dans l'explorateur web
 * Fonction serveur web avec possibilité de lire les données depuis un navigateur
-
+* Accès au serveur web avec l'invite http://companion dans un navigateur
 
 ![Screenshot](img/affiche.jpeg) 
 
