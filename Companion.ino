@@ -1,6 +1,6 @@
 //*************************************************
 //                  COMPANION                    **
-String          Version = "2.52";                
+String          Version = "2.53";                
 //                @jjhontebeyrie                 **
 /**************************************************
 **               Affichage déporté               **
@@ -542,11 +542,13 @@ void Affiche(){
   // Affichage valeur Consommation
   sprite.drawString(CO +" w",115,150);
 
-  //Voyant assistant de consommation
+  //Voyant assistant de consommation 
+  if (PV.toInt() < 1000) voyant.pushImage(0,0,68,68,BtnO); else voyant.pushImage(0,0,68,68,BtnV);
+  if (PV.toInt() < 500) voyant.pushImage(0,0,68,68,BtnR); 
+  if (CO.toInt() > 0) voyant.pushImage(0,0,68,68,BtnO); 
+  if (CO.toInt() > 500) voyant.pushImage(0,0,68,68,BtnR);  
+  if (CO.toInt() < -500) voyant.pushImage(0,0,68,68,BtnV);
   if (CO.toInt() > PV.toInt()) voyant.pushImage(0,0,68,68,BtnR);
-  if (PV.toInt() > CO.toInt()) voyant.pushImage(0,0,68,68,BtnO); 
-  if ((PV.toInt() > CO.toInt()) and (PV.toInt() > 1200)) voyant.pushImage(0,0,68,68,BtnV);  
-  if (CO.toInt() < 0) voyant.pushImage(0,0,68,68,BtnV);
   if (PV.toInt() < residuel) voyant.pushImage(0,0,68,68,BtnR);
              
   // En cas de chauffage électrique
